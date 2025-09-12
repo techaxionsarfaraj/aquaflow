@@ -1,16 +1,12 @@
 // backend/models/orderModel.js
 
-const pool = require('../config/db');
+const pool = require("../config/db");
 
 // Orders table
 const orderTableQuery = `
 CREATE TABLE IF NOT EXISTS orders (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    created_by VARCHAR(255),
-    customer_id BIGINT NOT NULL,
-    customer_name VARCHAR(255) NOT NULL,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,    
+    customer_id BIGINT NOT NULL,    
     order_date DATE NOT NULL,
     delivery_date DATE NOT NULL,
     total_amount DECIMAL(10,2) NOT NULL,
@@ -20,18 +16,19 @@ CREATE TABLE IF NOT EXISTS orders (
     status ENUM('pending','confirmed','out_for_delivery','delivered','cancelled') DEFAULT 'pending',
     payment_status ENUM('pending','partial','paid') DEFAULT 'pending',
     is_monthly_order BOOLEAN DEFAULT FALSE,
+    updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,    
+    created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
 );`;
-
 
 async function createTable() {
   try {
     const connection = await pool.getConnection();
-    await connection.query(orderTableQuery);    
+    await connection.query(orderTableQuery);
     connection.release();
-    console.log('✅ Orders & Order_Items tables checked/created');
+    console.log("✅ Orders & Order_Items tables checked/created");
   } catch (err) {
-    console.error('❌ Error creating orders/order_items table:', err);
+    console.error("❌ Error creating orders/order_items table:", err);
     throw err;
   }
 }
@@ -40,36 +37,49 @@ async function createTable() {
 async function getAllOrders() {
   const [rows] = await pool.query(
     `SELECT o.*, 
-            JSON_ARRAYAGG(
-              JSON_OBJECT(
-                'product_id', oi.product_id,
-                'product_name', p.name,
-                'quantity', oi.quantity,
-                'unit_price', oi.unit_price,
-                'total', oi.total
-              )
-            ) as products
+            CONCAT(
+              '[', 
+              IFNULL(GROUP_CONCAT(
+                JSON_OBJECT(
+                  'product_id', oi.product_id,
+                  'product_name', p.name,
+                  'quantity', oi.quantity,
+                  'unit_price', oi.unit_price,
+                  'total', oi.total
+                )
+              ), ''), 
+              ']'
+            ) AS products
      FROM orders o
      LEFT JOIN order_items oi ON o.id = oi.order_id
      LEFT JOIN products p ON oi.product_id = p.id
      GROUP BY o.id
      ORDER BY o.created_date DESC`
   );
-  return rows;
+
+  // Parse JSON strings for products
+  return rows.map(row => ({
+    ...row,
+    products: row.products ? JSON.parse(row.products) : []
+  }));
 }
 
 async function getOrderById(id) {
   const [rows] = await pool.query(
     `SELECT o.*, 
-            JSON_ARRAYAGG(
-              JSON_OBJECT(
-                'product_id', oi.product_id,
-                'product_name', p.name,
-                'quantity', oi.quantity,
-                'unit_price', oi.unit_price,
-                'total', oi.total
-              )
-            ) as products
+            CONCAT(
+              '[', 
+              IFNULL(GROUP_CONCAT(
+                JSON_OBJECT(
+                  'product_id', oi.product_id,
+                  'product_name', p.name,
+                  'quantity', oi.quantity,
+                  'unit_price', oi.unit_price,
+                  'total', oi.total
+                )
+              ), ''), 
+              ']'
+            ) AS products
      FROM orders o
      LEFT JOIN order_items oi ON o.id = oi.order_id
      LEFT JOIN products p ON oi.product_id = p.id
@@ -77,8 +87,15 @@ async function getOrderById(id) {
      GROUP BY o.id`,
     [id]
   );
-  return rows[0] || null;
+
+  if (!rows[0]) return null;
+
+  // Parse products JSON string
+  const row = rows[0];
+  row.products = row.products ? JSON.parse(row.products) : [];
+  return row;
 }
+
 
 async function createOrder(data) {
   const connection = await pool.getConnection();
@@ -87,21 +104,19 @@ async function createOrder(data) {
 
     const [result] = await connection.query(
       `INSERT INTO orders 
-      (created_by, customer_id, customer_name, order_date, delivery_date, total_amount, delivery_address, delivery_area, delivery_notes, status, payment_status, is_monthly_order)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ( customer_id,  order_date, delivery_date, total_amount, delivery_address, delivery_area, delivery_notes, status, payment_status, is_monthly_order)
+      VALUES ( ?, ?,  ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        data.created_by || null,
         data.customer_id,
-        data.customer_name,
         data.order_date,
         data.delivery_date,
         data.total_amount,
         data.delivery_address || null,
         data.delivery_area || null,
         data.delivery_notes || null,
-        data.status || 'pending',
-        data.payment_status || 'pending',
-        data.is_monthly_order || false
+        data.status || "pending",
+        data.payment_status || "pending",
+        data.is_monthly_order || false,
       ]
     );
 
@@ -111,14 +126,14 @@ async function createOrder(data) {
     if (Array.isArray(data.products)) {
       for (const item of data.products) {
         await connection.query(
-          `INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)`,
-          [orderId, item.product_id, item.quantity, item.price]
+          `INSERT INTO order_items (order_id, product_id, quantity, unit_price, total) VALUES (?, ?, ?, ?, ?)`,
+          [orderId, item.product_id, item.quantity, item.unit_price, item.total]
         );
       }
     }
 
     await connection.commit();
-    return getOrderById(orderId);
+    return await  getOrderById(orderId);
   } catch (err) {
     await connection.rollback();
     throw err;
@@ -134,22 +149,20 @@ async function updateOrder(id, data) {
 
     await connection.query(
       `UPDATE orders SET
-        created_by=?, customer_id=?, customer_name=?, order_date=?, delivery_date=?, total_amount=?, delivery_address=?, delivery_area=?, delivery_notes=?, status=?, payment_status=?, is_monthly_order=?, updated_date=NOW()
+         customer_id=?, order_date=?, delivery_date=?, total_amount=?, delivery_address=?, delivery_area=?, delivery_notes=?, status=?, payment_status=?, is_monthly_order=?, updated_date=NOW()
         WHERE id=?`,
       [
-        data.created_by || null,
         data.customer_id,
-        data.customer_name,
         data.order_date,
         data.delivery_date,
         data.total_amount,
         data.delivery_address || null,
         data.delivery_area || null,
         data.delivery_notes || null,
-        data.status || 'pending',
-        data.payment_status || 'pending',
+        data.status || "pending",
+        data.payment_status || "pending",
         data.is_monthly_order || false,
-        id
+        id,
       ]
     );
 
@@ -158,14 +171,14 @@ async function updateOrder(id, data) {
     if (Array.isArray(data.products)) {
       for (const item of data.products) {
         await connection.query(
-          `INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)`,
-          [id, item.product_id, item.quantity, item.price]
+          `INSERT INTO order_items (order_id, product_id, quantity, unit_price, total) VALUES (?, ?, ?, ?, ?)`,
+          [id, item.product_id, item.quantity, item.unit_price, item.total]
         );
       }
     }
 
     await connection.commit();
-    return getOrderById(id);
+    return await  getOrderById(id);
   } catch (err) {
     await connection.rollback();
     throw err;
@@ -175,8 +188,8 @@ async function updateOrder(id, data) {
 }
 
 async function deleteOrder(id) {
-  await pool.query('DELETE FROM orders WHERE id = ?', [id]);
-  return { message: 'Order deleted successfully' };
+  await pool.query("DELETE FROM orders WHERE id = ?", [id]);
+  return { message: "Order deleted successfully" };
 }
 
 module.exports = {
@@ -185,5 +198,5 @@ module.exports = {
   getOrderById,
   createOrder,
   updateOrder,
-  deleteOrder
+  deleteOrder,
 };

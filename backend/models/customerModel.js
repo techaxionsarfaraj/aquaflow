@@ -4,20 +4,21 @@ const pool = require('../config/db');
 
 const customerTableQuery = `
 CREATE TABLE IF NOT EXISTS customers (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,    
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,    
     name VARCHAR(255) NOT NULL,
     phone VARCHAR(20) NOT NULL,
     email VARCHAR(255),
     address TEXT NOT NULL,
     area VARCHAR(255),
+    area_type ENUM('residential', 'commercial'),
     delivery_preference ENUM('morning', 'afternoon', 'evening', 'anytime') DEFAULT 'anytime',
     monthly_subscription BOOLEAN DEFAULT TRUE,
     bottles_per_month INT DEFAULT 4,
     deposit_amount DECIMAL(10,2) DEFAULT 0.00,
     status ENUM('active', 'inactive', 'suspended') DEFAULT 'active',
-    notes TEXT
+    notes TEXT,
+    updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,    
+    created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );`;
 
 // -------------------------------

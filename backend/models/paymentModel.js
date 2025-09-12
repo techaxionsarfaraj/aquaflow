@@ -5,11 +5,9 @@ const pool = require('../config/db');
 const paymentTableQuery = `
 CREATE TABLE IF NOT EXISTS payments (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
     created_by VARCHAR(255),
-    customer_id BIGINT NOT NULL,
-    customer_name VARCHAR(255) NOT NULL,
+    customer_id BIGINT NOT NULL,    
     order_id BIGINT,
     amount DECIMAL(10,2) NOT NULL,
     payment_date DATE NOT NULL,
@@ -18,6 +16,8 @@ CREATE TABLE IF NOT EXISTS payments (
     bill_month VARCHAR(7),
     notes TEXT,
     collected_by VARCHAR(255),
+    updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE,
     FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL
 );`;
@@ -48,12 +48,11 @@ async function getPaymentById(id) {
 async function createPayment(data) {
   const [result] = await pool.query(
     `INSERT INTO payments
-     (created_by, customer_id, customer_name, order_id, amount, payment_date, payment_method, payment_type, bill_month, notes, collected_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     (created_by, customer_id,  order_id, amount, payment_date, payment_method, payment_type, bill_month, notes, collected_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       data.created_by || null,
       data.customer_id,
-      data.customer_name,
       data.order_id || null,
       data.amount,
       data.payment_date,
@@ -70,12 +69,11 @@ async function createPayment(data) {
 async function updatePayment(id, data) {
   await pool.query(
     `UPDATE payments SET
-      created_by=?, customer_id=?, customer_name=?, order_id=?, amount=?, payment_date=?, payment_method=?, payment_type=?, bill_month=?, notes=?, collected_by=?, updated_date=NOW()
+      created_by=?, customer_id=?,  order_id=?, amount=?, payment_date=?, payment_method=?, payment_type=?, bill_month=?, notes=?, collected_by=?, updated_date=NOW()
       WHERE id=?`,
     [
       data.created_by || null,
-      data.customer_id,
-      data.customer_name,
+      data.customer_id,    
       data.order_id || null,
       data.amount,
       data.payment_date,

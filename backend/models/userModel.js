@@ -5,10 +5,10 @@ const pool = require('../config/db');
 const userTableQuery = `
 CREATE TABLE IF NOT EXISTS users (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     email VARCHAR(255) UNIQUE NOT NULL,
     full_name VARCHAR(255) NOT NULL,
-    role ENUM('admin','user') DEFAULT 'user'
+    role ENUM('admin','user') DEFAULT 'user',
+    created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );`;
 
 async function createTable() {

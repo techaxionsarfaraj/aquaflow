@@ -5,9 +5,6 @@ const pool = require('../config/db');
 const productTableQuery = `
 CREATE TABLE IF NOT EXISTS products (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    created_by VARCHAR(255),
     name VARCHAR(255) NOT NULL,
     type ENUM('20L_jar', '10L_jar', '5L_bottle', '1L_bottle') NOT NULL,
     description TEXT,
@@ -16,7 +13,9 @@ CREATE TABLE IF NOT EXISTS products (
     deposit_amount DECIMAL(10,2) DEFAULT 0.00,
     current_stock INT DEFAULT 0,
     minimum_stock INT DEFAULT 10,
-    status ENUM('active','inactive') DEFAULT 'active'
+    status ENUM('active','inactive') DEFAULT 'active',
+    updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );`;
 
 async function createTable() {
