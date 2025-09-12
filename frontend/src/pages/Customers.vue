@@ -57,7 +57,7 @@
       class="rounded-lg border bg-card bg-white text-card-foreground shadow-sm relative overflow-hidden p-6"
     >
       <div class="text-2xl font-bold text-gray-950 text-left mb-3">
-        {{ customers.filter((c) => c.customer_type === 'commercial').length }}
+        {{ customers.filter((c) => c.area_type === 'commercial').length }}
       </div>
       <div class="text-sm text-gray-500 text-left">Commercial</div>
       <div
@@ -69,7 +69,7 @@
       class="rounded-lg border bg-card bg-white text-card-foreground shadow-sm relative overflow-hidden p-6"
     >
       <div class="text-2xl font-bold text-gray-950 text-left mb-3">
-        {{ customers.filter((c) => c.customer_type === 'residential').length }}
+        {{ customers.filter((c) => c.area_type === 'residential').length }}
       </div>
       <div class="text-sm text-gray-500 text-left">Residential</div>
       <div
@@ -138,7 +138,7 @@
       <!-- Header -->
       <div class="flex items-center space-x-3 mb-2">
         <div class="w-10 h-10 flex items-center justify-center rounded-full bg-blue-100">
-          <span v-if="c.customer_type === 'residential'">
+          <span v-if="c.area_type === 'residential'">
             <i class="fa-regular fa-house text-blue-600"></i>
           </span>
           <span v-else>
@@ -217,7 +217,7 @@
 </template>
 
 <script>
-import { getCustomers, createCustomer, updateCustomer, deleteCustomer } from '@/api/customer'
+import { getCustomers, deleteCustomer } from '@/api/customer'
 import CustomerForm from '@/components/customers/CustomerForm.vue'
 
 export default {
@@ -246,7 +246,7 @@ export default {
           (c.email && c.email.toLowerCase().includes(this.search.toLowerCase()))
 
         const matchesStatus = !this.filters.status || c.status === this.filters.status
-        const matchesType = !this.filters.type || c.customer_type === this.filters.type
+        const matchesType = !this.filters.type || c.area_type === this.filters.type?.toLowerCase()
         const matchesArea = !this.filters.area || c.area === this.filters.area
 
         return matchesSearch && matchesStatus && matchesType && matchesArea
