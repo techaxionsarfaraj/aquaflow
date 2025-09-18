@@ -1,18 +1,16 @@
 // backend/models/productModel.js
 
-const pool = require('../config/db');
+const pool = require("../config/db");
 
 const productTableQuery = `
 CREATE TABLE IF NOT EXISTS products (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    type ENUM('20L_jar', '10L_jar', '5L_bottle', '1L_bottle') NOT NULL,
-    description TEXT,
+    type VARCHAR(255) NOT NULL,
     price_per_unit DECIMAL(10,2) NOT NULL,
-    deposit_required BOOLEAN DEFAULT TRUE,
-    deposit_amount DECIMAL(10,2) DEFAULT 0.00,
-    current_stock INT DEFAULT 0,
-    minimum_stock INT DEFAULT 10,
+    description TEXT,
+    total_stock INT DEFAULT 0,
+    current_stock INT DEFAULT 0,    
     status ENUM('active','inactive') DEFAULT 'active',
     updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -23,69 +21,64 @@ async function createTable() {
     const connection = await pool.getConnection();
     await connection.query(productTableQuery);
     connection.release();
-    console.log('✅ Product table checked/created');
+    console.log("✅ Product table checked/created");
   } catch (err) {
-    console.error('❌ Error creating product table:', err);
+    console.error("❌ Error creating product table:", err);
     throw err;
   }
 }
 
-// CRUD Operations
+// Get all products
 async function getAllProducts() {
-  const [rows] = await pool.query('SELECT * FROM products');
+  const [rows] = await pool.query("SELECT * FROM products");
   return rows;
 }
-
+// Get product by ID
 async function getProductById(id) {
-  const [rows] = await pool.query('SELECT * FROM products WHERE id = ?', [id]);
+  const [rows] = await pool.query("SELECT * FROM products WHERE id = ?", [id]);
   return rows[0] || null;
 }
-
-async function createProduct(data) {  
+// Create new product
+async function createProduct(data) {
   const [result] = await pool.query(
     `INSERT INTO products
-     ( name, type, description, price_per_unit, deposit_required, deposit_amount, current_stock, minimum_stock, status)
-     VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [      
+     ( name, type,  price_per_unit, description, total_stock, current_stock,  status)
+     VALUES ( ?, ?, ?, ?, ?, ?, ?)`,
+    [
       data.name,
       data.type,
-      data.description || null,
       data.price_per_unit,
-      data.deposit_required !== undefined ? data.deposit_required : true,
-      data.deposit_amount || 0.0,
+      data.description || null,
+      data.total_stock || 0,
       data.current_stock || 0,
-      data.minimum_stock || 10,
-      data.status || 'active'
+      data.status || "active",
     ]
-  );  
+  );
   return getProductById(result.insertId);
 }
-
+// Update product
 async function updateProduct(id, data) {
   await pool.query(
     `UPDATE products SET
-      created_by = ?, name = ?, type = ?, description = ?, price_per_unit = ?, deposit_required = ?, deposit_amount = ?, current_stock = ?, minimum_stock = ?, status = ?, updated_date = NOW()
+       name = ?, type = ?, price_per_unit = ?, description = ?, current_stock = ?, total_stock = ?, status = ?, updated_date = NOW()
      WHERE id = ?`,
     [
-      data.created_by || null,
       data.name,
       data.type,
-      data.description || null,
       data.price_per_unit,
-      data.deposit_required !== undefined ? data.deposit_required : true,
-      data.deposit_amount || 0.0,
+      data.description || null,
       data.current_stock || 0,
-      data.minimum_stock || 10,
-      data.status || 'active',
-      id
+      data.total_stock || 0,
+      data.status || "active",
+      id,
     ]
   );
   return getProductById(id);
 }
-
+// Delete product
 async function deleteProduct(id) {
-  await pool.query('DELETE FROM products WHERE id = ?', [id]);
-  return { message: 'Product deleted successfully' };
+  await pool.query("DELETE FROM products WHERE id = ?", [id]);
+  return { message: "Product deleted successfully" };
 }
 
 module.exports = {
@@ -94,5 +87,5 @@ module.exports = {
   getProductById,
   createProduct,
   updateProduct,
-  deleteProduct
+  deleteProduct,
 };

@@ -80,7 +80,7 @@
           </td>
           <td class="px-4 py-3">
             <template v-if="order.products && order.products.length">
-              <span v-for="(p, idx) in order.products" :key="idx" class="block">
+              <span v-for="(p, idx) in order.items" :key="idx">
                 {{ p.product_name }} (x{{ p.quantity }})
               </span>
             </template>
@@ -118,7 +118,9 @@
     v-if="showForm"
     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
   >
-    <div class="bg-white rounded-lg shadow-lg w-full max-w-2xl p-6 relative">
+    <div
+      class="bg-white rounded-lg border bg-card text-card-foreground shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 relative"
+    >
       <h2 class="text-2xl font-semibold mb-4">
         <i class="fa-regular fa-box"></i>
         {{ editingOrder ? 'Edit Order' : 'Create New Order' }}
@@ -166,6 +168,27 @@ async function fetchOrders() {
   try {
     const { data } = await getOrders()
     orders.value = data || []
+    if (orders.value.length > 17 && orders.value[17].items) {
+      let rawItems = orders.value[17].items
+
+      // If items is a string, parse it
+      if (typeof rawItems === 'string') {
+        try {
+          rawItems = JSON.parse(rawItems)
+        } catch (e) {
+          console.error('Invalid JSON in items:', e)
+          return
+        }
+      }
+
+      // Ensure it's an array before accessing index 0
+      if (Array.isArray(rawItems) && rawItems.length > 0) {
+        const item = JSON.stringify(rawItems[0], null, 2)
+        console.log(item)
+      } else {
+        console.warn('items is not an array or is empty:', rawItems)
+      }
+    }
     calculateStats()
   } catch (error) {
     console.error('Failed to fetch orders:', error)
