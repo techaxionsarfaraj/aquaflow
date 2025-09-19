@@ -11,7 +11,7 @@
           v-model="form.name"
           type="text"
           placeholder="Customer name"
-          class="w-full border rounded-md px-3 py-2 focus:outline"
+          class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
           required
         />
       </div>
@@ -23,7 +23,7 @@
           v-model="form.phone"
           type="text"
           placeholder="Phone number"
-          class="w-full border rounded-md px-3 py-2 focus:outline"
+          class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
           required
         />
       </div>
@@ -35,7 +35,7 @@
           v-model="form.email"
           type="email"
           placeholder="Email address"
-          class="w-full border rounded-md px-3 py-2 focus:outline"
+          class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
         />
       </div>
 
@@ -46,7 +46,7 @@
           v-model="form.street_address"
           type="text"
           placeholder="Street address"
-          class="w-full border rounded-md px-3 py-2 focus:outline"
+          class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
           required
         />
       </div>
@@ -58,7 +58,7 @@
           v-model="form.area"
           type="text"
           placeholder="Delivery area"
-          class="w-full border rounded-md px-3 py-2 focus:outline"
+          class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
         />
       </div>
 
@@ -69,7 +69,7 @@
           v-model="form.town"
           type="text"
           placeholder="Town"
-          class="w-full border rounded-md px-3 py-2 focus:outline"
+          class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
         />
       </div>
       <!-- City -->
@@ -79,7 +79,7 @@
           v-model="form.city"
           type="text"
           placeholder="City"
-          class="w-full border rounded-md px-3 py-2 focus:outline"
+          class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
         />
       </div>
       <!-- Zip Code -->
@@ -89,7 +89,7 @@
           v-model="form.pincode"
           type="text"
           placeholder="Pincode"
-          class="w-full border rounded-md px-3 py-2 focus:outline"
+          class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
         />
       </div>
       <!-- Customer Type -->
@@ -97,7 +97,7 @@
         <label class="block text-sm font-medium mb-1">Customer Type</label>
         <select
           v-model="form.customer_type"
-          class="w-full border rounded-md px-3 py-2 focus:outline"
+          class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
         >
           <option value="residential">Residential</option>
           <option value="commercial" selected>Commercial</option>
@@ -109,7 +109,7 @@
         <label class="block text-sm font-medium mb-1">Delivery Preference</label>
         <select
           v-model="form.delivery_preference"
-          class="w-full border rounded-md px-3 py-2 focus:outline"
+          class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
         >
           <option value="morning" selected>Morning</option>
           <option value="afternoon">Afternoon</option>
@@ -157,14 +157,14 @@
           v-model="form.deposit_amount"
           type="number"
           min="0"
-          class="w-full border rounded-md px-3 py-2 focus:outline"
+          class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
         />
       </div>
 
       <!-- Status -->
       <div>
         <label class="block text-sm font-medium mb-1">Status</label>
-        <select v-model="form.status" class="w-full border rounded-md px-3 py-2 focus:outline">
+        <select v-model="form.status" class="text-sm w-full border rounded-md px-3 py-2 focus:outline">
           <option value="active" selected>Active</option>
           <option value="inactive">Inactive</option>
           <option value="suspended">Suspended</option>
@@ -174,12 +174,12 @@
     <!-- Notes -->
     <div>
       <label class="block text-sm font-medium mb-1">Notes</label>
-      <input
+      <textarea
         v-model="form.notes"
-        type="text"
+        rows="2"
         placeholder="Additional notes"
-        class="w-full border rounded-md px-3 py-2 focus:outline"
-      />
+        class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
+      ></textarea>
     </div>
 
     <!-- Footer Buttons -->
@@ -187,16 +187,15 @@
       <button
         type="button"
         @click="$emit('cancel')"
-        class="px-4 py-2 rounded-md border hover:bg-gray-100 transition-colors"
+        class="px-3 py-2 rounded-md font-semibold text-sm border hover:bg-gray-100 transition-colors"
       >
         Cancel
       </button>
       <button
         type="submit"
-        class="px-4 py-2 rounded-md bg-gray-800 text-white hover:bg-gray-950 transition-colors"
-      >
-        <i class="fa-thin fa-floppy-disk"></i>
-        {{ form.id ? 'Update Customer' : 'Create Customer' }}
+        class="px-3 py-2 rounded-md font-semibold text-sm text-white bg-gray-800 hover:bg-gray-950 transition-colors"
+      >       
+        {{ form.id ? 'Update Customer' : 'Save Customer' }}
       </button>
     </div>
   </form>

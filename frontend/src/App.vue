@@ -62,7 +62,7 @@
           active-class="border-blue-500 text-blue-700 border-r-2 bg-blue-50 "
         >
           <i class="fa-regular fa-box-isometric"></i>
-          Stock
+          Products & Stocks
         </router-link>
         <router-link
           to="/orders"

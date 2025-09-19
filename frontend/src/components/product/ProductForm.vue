@@ -10,7 +10,7 @@
           v-model="form.name"
           type="text"
           placeholder="Product name"
-          class="w-full border rounded-md px-3 py-2 focus:outline"
+          class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
           required
         />
       </div>
@@ -18,12 +18,11 @@
       <!-- Type -->
       <div>
         <label class="block text-sm font-medium mb-1">Type</label>
-        <select v-model="form.type" class="w-full border rounded-md px-3 py-2 focus:outline">
-          <option value="20L_jar">20L Jar</option>
-          <option value="10L_jar">10L Jar</option>
-          <option value="5L_bottle">5L Bottle</option>
-          <option value="1L_bottle">1L Bottle</option>
-        </select>
+        <input
+          v-model="form.type"
+          type="text"
+          placeholder="Product type (e.g. 20L Jar, 10L Jar, 5L Bottle, 1L Bottle)"
+          class="text-sm w-full border rounded-md px-3 py-2 focus:outline" />
       </div>
 
       <!-- Unit Price -->
@@ -34,39 +33,28 @@
           type="number"
           min="0"
           step="0.01"
-          class="w-full border rounded-md px-3 py-2 focus:outline"
+          class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
         />
       </div>
 
       <!-- Status -->
       <div>
         <label class="block text-sm font-medium mb-1">Status</label>
-        <select v-model="form.status" class="w-full border rounded-md px-3 py-2 focus:outline">
+        <select v-model="form.status" class="text-sm w-full border rounded-md px-3 py-2 focus:outline">
           <option value="active">Active</option>
           <option value="inactive">Inactive</option>
         </select>
       </div>
     </div>
-    <!-- Deposit Amount -->
-    <div>
-      <label class="block text-sm font-medium mb-1">Deposit Amount (₹)</label>
-      <input
-        v-model="form.deposit_amount"
-        type="number"
-        min="0"
-        step="0.01"
-        class="w-full border rounded-md px-3 py-2 focus:outline"
-      />
-    </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <!-- Current Stock -->
+      <!-- Total Stock -->
       <div>
-        <label class="block text-sm font-medium mb-1">Current Stock</label>
+        <label class="block text-sm font-medium mb-1">Total Stock</label>
         <input
-          v-model="form.current_stock"
+          v-model="form.total_stock"
           type="number"
           min="0"
-          class="w-full border rounded-md px-3 py-2 focus:outline"
+          class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
         />
       </div>
       <!-- Minimum Stock -->
@@ -76,7 +64,7 @@
           v-model="form.minimum_stock"
           type="number"
           min="0"
-          class="w-full border rounded-md px-3 py-2 focus:outline"
+          class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
         />
       </div>
     </div>
@@ -87,7 +75,7 @@
         v-model="form.description"
         rows="2"
         placeholder="Additional notes"
-        class="w-full border rounded-md px-3 py-2 focus:outline"
+        class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
       ></textarea>
     </div>
 
@@ -96,13 +84,13 @@
       <button
         type="button"
         @click="$emit('cancel')"
-        class="px-4 py-2 rounded-md border hover:bg-gray-100 transition-colors"
+        class="px-3 py-2 rounded-md font-semibold text-sm border hover:bg-gray-100 transition-colors"
       >
         Cancel
       </button>
       <button
         type="submit"
-        class="px-4 py-2 rounded-md bg-gray-800 text-white hover:bg-gray-950 transition-colors"
+        class="px-3 py-2 rounded-md font-semibold text-sm text-white bg-gray-800 hover:bg-gray-950 transition-colors"
       >
         {{ form.id ? 'Update Product' : 'Create Product' }}
       </button>
@@ -122,9 +110,8 @@ export default {
         name: '',
         type: '',
         price_per_unit: 0,
-        status: 'active',
-        deposit_amount: 0,
-        current_stock: 0,
+        status: 'active',        
+        total_stock_stock: 0,
         minimum_stock: 0,
         description: '',
       },

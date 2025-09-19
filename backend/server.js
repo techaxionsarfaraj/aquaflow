@@ -43,7 +43,7 @@ async function startServer() {
     connection.release();
 
     // 2️⃣ Initialize tables
-    await initTables();
+    // await initTables();
 
     // 3️⃣ Start Express server
     app.listen(PORT, () =>

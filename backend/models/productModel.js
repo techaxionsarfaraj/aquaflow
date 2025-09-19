@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS products (
     price_per_unit DECIMAL(10,2) NOT NULL,
     description TEXT,
     total_stock INT DEFAULT 0,
-    current_stock INT DEFAULT 0,    
+    available_stock INT DEFAULT 0,
+    minimum_stock INT DEFAULT 0,
     status ENUM('active','inactive') DEFAULT 'active',
     updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -42,15 +43,15 @@ async function getProductById(id) {
 async function createProduct(data) {
   const [result] = await pool.query(
     `INSERT INTO products
-     ( name, type,  price_per_unit, description, total_stock, current_stock,  status)
+     ( name, type,  price_per_unit, description, total_stock, minimum_stock,  status)
      VALUES ( ?, ?, ?, ?, ?, ?, ?)`,
     [
       data.name,
       data.type,
       data.price_per_unit,
       data.description || null,
-      data.total_stock || 0,
-      data.current_stock || 0,
+      data.total_stock || 0,      
+      data.minimum_stock || 0,
       data.status || "active",
     ]
   );
@@ -60,14 +61,14 @@ async function createProduct(data) {
 async function updateProduct(id, data) {
   await pool.query(
     `UPDATE products SET
-       name = ?, type = ?, price_per_unit = ?, description = ?, current_stock = ?, total_stock = ?, status = ?, updated_date = NOW()
+       name = ?, type = ?, price_per_unit = ?, description = ?,  total_stock = ?, minimum_stock = ?, status = ?, updated_date = NOW()
      WHERE id = ?`,
     [
       data.name,
       data.type,
       data.price_per_unit,
-      data.description || null,
-      data.current_stock || 0,
+      data.description || null,      
+      data.minimum_stock || 0,
       data.total_stock || 0,
       data.status || "active",
       id,
