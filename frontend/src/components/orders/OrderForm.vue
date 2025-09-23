@@ -1,13 +1,14 @@
 <!-- ./src/components/orders/OrderForm.vue -->
 <template>
   <form @submit.prevent="saveOrder" class="space-y-4">
+
     <!-- Customer -->
     <div>
       <label class="block text-sm font-medium mb-1">Customer *</label>
       <select
         v-model="form.customer_id"
         required
-        class="w-full border rounded-md px-3 py-2 focus:outline"
+        class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
       >
         <option value="">Select Customer</option>
         <option v-for="c in customers" :key="c.id" :value="c.id">
@@ -21,12 +22,12 @@
       <label class="block text-sm font-medium mb-2">Items</label>
       <div class="space-y-2">
         <div
-          v-for="(item, index) in form.items"
+          v-for="(item, index) in form.product_details"
           :key="index"
           class="grid grid-cols-12 gap-2 items-center"
         >
           <!-- Product -->
-          <div class="col-span-5">
+          <div class="col-span-3">
             <label class="block text-xs font-medium mb-2">Product</label>
             <select
               v-model="item.product_id"
@@ -55,7 +56,7 @@
 
           <!-- Unit Price -->
           <div class="col-span-2">
-            <label class="block text-xs font-medium mb-2">Unit Price</label>
+            <label class="block text-xs font-medium mb-2">Unit Price (₹)</label>
             <input
               type="number"
               step="0.01"
@@ -63,6 +64,16 @@
               class="w-full border rounded-md px-2 py-1 text-center text-sm bg-gray-100"
               readonly
             />
+          </div>
+
+          <!-- Available Stock -->
+          <div class="col-span-2">
+            <label class="block text-xs font-medium mb-2">Available Stock</label>
+            <div
+              class="w-full border rounded-md px-2 py-1 text-center text-sm font-semibold bg-gray-100"
+            >
+              {{ (products.find((p) => p.id === item.product_id) || {}).available_stock ?? '' }}
+            </div>
           </div>
 
           <!-- Total -->
@@ -99,95 +110,149 @@
       </div>
     </div>
 
-    <!-- Order Details -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <label class="block text-sm font-medium mb-1">Delivery Area</label>
-        <input
-          v-model="form.delivery_area"
-          type="text"
-          class="w-full border rounded-md px-3 py-2 focus:outline"
-        />
-      </div>
+    <!-- Delivery Details -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <!-- Delivery Date -->
       <div>
         <label class="block text-sm font-medium mb-1">Delivery Date *</label>
         <input
           v-model="form.delivery_date"
           type="date"
           required
-          class="w-full border rounded-md px-3 py-2 focus:outline"
+          class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
+        />
+      </div>
+
+      <!-- Delivery Street Address -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Delivery Street Address</label>
+        <input
+          v-model="form.delivery_street_address"
+          type="text"
+          class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
+        />
+      </div>
+
+      <!-- Delivery Area -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Delivery Area</label>
+        <input
+          v-model="form.delivery_area"
+          type="text"
+          class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
+        />
+      </div>
+
+      <!-- Delivery Town -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Delivery Town</label>
+        <input
+          v-model="form.delivery_town"
+          type="text"
+          class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
+        />
+      </div>
+
+      <!-- Delivery City -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Delivery City</label>
+        <input
+          v-model="form.delivery_city"
+          type="text"
+          class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
+        />
+      </div>
+
+      <!-- Delivery Pincode -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Delivery Pincode</label>
+        <input
+          v-model="form.delivery_pincode"
+          type="text"
+          class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
         />
       </div>
     </div>
 
+    <!-- Status -->
     <div>
-      <label class="block text-sm font-medium mb-1">Delivery Address</label>
+      <label class="block text-sm font-medium mb-1">Status</label>
+      <select
+        v-model="form.status"
+        required
+        class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
+      >
+        <option value="scheduled">Scheduled</option>
+        <option value="pending">Pending</option>
+        <option value="out_for_delivery">Out for Delivery</option>
+        <option value="delivered">Delivered</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+    </div>
+
+    <!-- Delivery Notes -->
+    <div>
+      <label class="block text-sm font-medium mb-1">Delivery Notes</label>
       <textarea
-        v-model="form.delivery_address"
+        v-model="form.delivery_notes"
         rows="2"
-        class="w-full border rounded-md px-3 py-2 focus:outline"
+        class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
       ></textarea>
     </div>
 
-    <div>
-      <label class="block text-sm font-medium mb-1">Delivery Notes</label>
-      <input
-        v-model="form.delivery_notes"
-        type="text"
-        class="w-full border rounded-md px-3 py-2 focus:outline"
-      />
-    </div>
-
     <!-- Total -->
-    <div class="flex justify-end text-lg font-bold">
-      Total: ₹ {{ totalAmount.toFixed(2) }}
-    </div>
+    <div class="flex justify-end text-lg font-bold">Total: ₹ {{ totalAmount.toFixed(2) }}</div>
 
     <!-- Footer -->
     <div class="flex justify-end space-x-3 pt-4">
       <button
         type="button"
         @click="$emit('cancel')"
-        class="px-4 py-2 rounded-md border hover:bg-gray-100 transition-colors"
+        class="px-3 py-2 rounded-md font-semibold text-sm border hover:bg-gray-100 transition-colors"
       >
         Cancel
       </button>
       <button
         type="submit"
-        class="px-4 py-2 rounded-md bg-gray-800 text-white hover:bg-gray-950 transition-colors"
+        class="px-3 py-2 rounded-md font-semibold text-sm text-white bg-gray-800 hover:bg-gray-950 transition-colors"
       >
-        {{ form.id ? "Update Order" : "Create Order" }}
+        {{ form.id ? 'Update Order' : 'Create Order' }}
       </button>
     </div>
+
   </form>
 </template>
 
 <script>
-import { createOrder, updateOrder } from "@/api/order";
-import { getCustomers } from "@/api/customer";
-import { getProducts } from "@/api/product";
+import { createOrder, updateOrder } from '@/api/order'
+import { getCustomers } from '@/api/customer'
+import { getProducts } from '@/api/product'
 
 export default {
   props: { order: Object },
   data() {
     return {
       form: {
-        id: null,
-        customer_id: "",
+        customer_id: '',
         order_date: new Date().toISOString().slice(0, 10),
-        delivery_date: "",
-        delivery_address: "",
-        delivery_area: "",
-        delivery_notes: "",
-        items: [],
+        product_details: [],
+        delivery_date: '',
+        delivery_street_address: '',
+        delivery_area: '',
+        delivery_town: '',
+        delivery_city: '',
+        delivery_pincode: '',        
+        delivery_notes: '',
+        total_amount: 0,
+        status: 'pending',        
       },
       customers: [],
       products: [],
-    };
+    }
   },
   computed: {
     totalAmount() {
-      return this.form.items.reduce((sum, i) => sum + (i.total || 0), 0);
+      return this.form.product_details.reduce((sum, i) => sum + (i.total || 0), 0)
     },
   },
   watch: {
@@ -198,8 +263,8 @@ export default {
           this.form = {
             ...this.form,
             ...o,
-            items: o.products || [],
-          };
+            product_details: o.product_details || [],
+          }
         }
       },
     },
@@ -207,61 +272,60 @@ export default {
   methods: {
     async fetchCustomers() {
       try {
-        const { data } = await getCustomers();
-        this.customers = data;
+        const { data } = await getCustomers()
+        this.customers = data
       } catch (err) {
-        console.error("Failed to fetch customers", err);
+        console.error('Failed to fetch customers', err)
       }
     },
     async fetchProducts() {
       try {
-        const { data } = await getProducts();
-        this.products = data;
+        const { data } = await getProducts()
+        this.products = data
       } catch (err) {
-        console.error("Failed to fetch products", err);
+        console.error('Failed to fetch products', err)
       }
     },
     addItem() {
-      this.form.items.push({
-        product_id: "",
+      this.form.product_details.push({
+        product_id: '',
         quantity: 0,
         unit_price: 0,
+        available_stock: 0,
         total: 0,
-      });
+      })
     },
     removeItem(index) {
-      this.form.items.splice(index, 1);
+      this.form.product_details.splice(index, 1)
     },
     updatePrice(index) {
-      const product = this.products.find(
-        (p) => p.id === this.form.items[index].product_id
-      );
+      const product = this.products.find((p) => p.id === this.form.product_details[index].product_id)
       if (product) {
-        this.form.items[index].unit_price = product.price_per_unit || 0;
-        this.calcSubtotal(index);
+        this.form.product_details[index].unit_price = product.price_per_unit || 0
+        this.calcSubtotal(index)
       }
     },
     calcSubtotal(index) {
-      const item = this.form.items[index];
-      item.total = (item.quantity || 0) * (item.unit_price || 0);
+      const item = this.form.product_details[index]
+      item.total = (item.quantity || 0) * (item.unit_price || 0)
     },
     async saveOrder() {
       try {
-        const payload = { ...this.form, total_amount: this.totalAmount };
+        const payload = { ...this.form, total_amount: this.totalAmount }
         if (this.form.id) {
-          await updateOrder(this.form.id, payload);
+          await updateOrder(this.form.id, payload)
         } else {
-          await createOrder(payload);
+          await createOrder(payload)
         }
-        this.$emit("saved");
+        this.$emit('saved')
       } catch (err) {
-        console.error("Save failed:", err);
+        console.error('Save failed:', err)
       }
     },
   },
   mounted() {
-    this.fetchCustomers();
-    this.fetchProducts();
+    this.fetchCustomers()
+    this.fetchProducts()
   },
-};
+}
 </script>

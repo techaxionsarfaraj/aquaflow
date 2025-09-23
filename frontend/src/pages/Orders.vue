@@ -79,10 +79,14 @@
             <div class="text-gray-500 text-xs">{{ order.customer_phone }}</div>
           </td>
           <td class="px-4 py-3">
-            <template v-if="order.products && order.products.length">
-              <span v-for="(p, idx) in order.items" :key="idx">
-                {{ p.product_name }} (x{{ p.quantity }})
-              </span>
+            <template v-if="order.product_details && order.product_details.length">
+              <div
+                v-for="(p, idx) in order.product_details"
+                :key="idx"
+                class="text-xs text-gray-700"
+              >
+                • {{ p.product_name }} (x{{ p.quantity }}) - ₹{{ p.total }}
+              </div>
             </template>
             <span v-else class="text-gray-400">No products</span>
           </td>
@@ -133,6 +137,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { getOrders, deleteOrder } from '@/api/order'
+import { getProduct } from '@/api/product'
 import OrderForm from '@/components/orders/OrderForm.vue'
 
 const orders = ref([])
@@ -163,32 +168,54 @@ function formatDate(dateStr) {
 }
 
 // Fetch orders
+
 async function fetchOrders() {
   loading.value = true
   try {
     const { data } = await getOrders()
     orders.value = data || []
-    if (orders.value.length > 17 && orders.value[17].items) {
-      let rawItems = orders.value[17].items
 
-      // If items is a string, parse it
-      if (typeof rawItems === 'string') {
-        try {
-          rawItems = JSON.parse(rawItems)
-        } catch (e) {
-          console.error('Invalid JSON in items:', e)
-          return
+    if (orders.value.length > 0) {
+      // Collect all product IDs from all orders
+      const rawItems = orders.value.map((order) => {
+        if (!order.product_details) return []
+        return typeof order.product_details === 'string'
+          ? JSON.parse(order.product_details)
+          : order.product_details
+      })
+
+      const productIds = rawItems.flatMap((items) => items.map((item) => item.product_id))
+      const uniqueProductIds = [...new Set(productIds)]
+
+      // Fetch product details in parallel
+      const productResponses = await Promise.all(uniqueProductIds.map((id) => getProduct(id)))
+
+      // Build a product map (handle arrays vs objects)
+      const productMap = {}
+      productResponses.forEach((res) => {
+        const prod = Array.isArray(res.data) ? res.data[0] : res.data
+        if (prod) {
+          productMap[prod.id] = prod.name
         }
-      }
+      })
 
-      // Ensure it's an array before accessing index 0
-      if (Array.isArray(rawItems) && rawItems.length > 0) {
-        const item = JSON.stringify(rawItems[0], null, 2)
-        console.log(item)
-      } else {
-        console.warn('items is not an array or is empty:', rawItems)
-      }
+      // Re-map orders with parsed product_details + product_name
+      orders.value = data.map((order) => {
+        const details =
+          typeof order.product_details === 'string' && order.product_details
+            ? JSON.parse(order.product_details)
+            : order.product_details || []
+
+        return {
+          ...order,
+          product_details: details.map((item) => ({
+            ...item,
+            product_name: productMap[item.product_id] || `Product #${item.product_id}`,
+          })),
+        }
+      })
     }
+
     calculateStats()
   } catch (error) {
     console.error('Failed to fetch orders:', error)

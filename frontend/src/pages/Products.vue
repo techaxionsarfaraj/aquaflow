@@ -101,7 +101,7 @@
         </div>
 
         <!-- Progress Bar -->
-        <div class="w-2/5 bg-gray-200 rounded-full h-4 mt-1 overflow-hidden">
+        <div class="w-full bg-gray-200 rounded-full h-4 mt-1 overflow-hidden">
           <div
             class="h-4 rounded-full"
             :class="s.available_stock < s.total_stock ? 'bg-red-500' : 'bg-gray-900'"

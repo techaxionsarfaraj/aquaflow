@@ -5,16 +5,18 @@ const pool = require("../config/db");
 const orderTableQuery = `
 CREATE TABLE IF NOT EXISTS orders (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,    
-    customer_id BIGINT NOT NULL,    
+    customer_id BIGINT NOT NULL,
     order_date DATE NOT NULL,
+    product_details JSON,
     delivery_date DATE NOT NULL,
-    delivery_address TEXT,
+    delivery_street_address VARCHAR(255) NOT NULL,
     delivery_area VARCHAR(255),
+    delivery_town VARCHAR(100),
+    delivery_city VARCHAR(100),
+    delivery_pincode VARCHAR(20),   
     delivery_notes TEXT,
-    status ENUM('pending','confirmed','out_for_delivery','delivered','cancelled') DEFAULT 'pending',    
-    is_monthly_order BOOLEAN DEFAULT FALSE,
-    items JSON,
     total_amount DECIMAL(10,2) NOT NULL,
+    status ENUM('pending','scheduled','out_for_delivery','delivered','cancelled') DEFAULT 'scheduled',
     updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,    
     created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
@@ -38,100 +40,73 @@ async function createTable() {
 
 async function getAllOrders() {
   const [rows] = await pool.query(`
-    SELECT o.id, o.customer_id, o.order_date, o.delivery_date, o.total_amount, o.delivery_address, o.delivery_area, o.delivery_notes, o.status, o.payment_status, o.is_monthly_order, 
-           GROUP_CONCAT(DISTINCT CONCAT(oi.product_name, ' (x', oi.quantity, ')') SEPARATOR ', ') AS product_names,
-           c.name AS customer_name
+    SELECT 
+      o.id, 
+      o.customer_id, 
+      o.order_date,
+      o.delivery_date, 
+      o.total_amount, 
+      o.delivery_street_address, 
+      o.delivery_area, 
+      o.delivery_town, 
+      o.delivery_city, 
+      o.delivery_pincode, 
+      o.delivery_notes, 
+      o.status,
+      o.product_details,
+      c.name AS customer_name,
+      c.phone AS customer_phone
     FROM orders o
     INNER JOIN customers c ON o.customer_id = c.id
-    INNER JOIN (
-      SELECT order_id, product_id, name as product_name, quantity
-      FROM order_items
-      INNER JOIN products p ON order_items.product_id = p.id
-    ) AS oi ON o.id = oi.order_id
-    GROUP BY o.id, o.customer_id, o.order_date, o.delivery_date, o.total_amount, o.delivery_address, o.delivery_area, o.delivery_notes, o.status, o.payment_status, o.is_monthly_order, c.name
+    ORDER BY o.created_date DESC
   `);
   return rows;
 }
 
 async function getOrderById(id) {
-  const [rows] = await pool.query(`
-    SELECT o.*, 
-           c.name AS customer_name,
-           c.phone AS customer_phone,
-           CONCAT(
-             '[', 
-             IFNULL(GROUP_CONCAT(
-               JSON_OBJECT(
-                 'product_id', oi.product_id,
-                 'product_name', p.name,
-                 'quantity', oi.quantity,
-                 'unit_price', oi.unit_price,
-                 'total', oi.total
-               )
-             ), ''), 
-             ']'
-           ) AS products
+  const [rows] = await pool.query(
+    `
+    SELECT 
+      o.*,
+      c.name AS customer_name,
+      c.phone AS customer_phone
     FROM orders o
     LEFT JOIN customers c ON o.customer_id = c.id
-    LEFT JOIN order_items oi ON o.id = oi.order_id
-    LEFT JOIN products p ON oi.product_id = p.id
     WHERE o.id = ?
-    GROUP BY o.id
-  `, [id]);
+  `,
+    [id]
+  );
 
   if (!rows[0]) return null;
 
   const row = rows[0];
-  row.products = row.products ? JSON.parse(row.products) : [];
+  row.product_details = row.product_details
+    ? JSON.parse(row.product_details)
+    : [];
   return row;
 }
 
-// -----------------------------
-// Other CRUD functions remain same
-// -----------------------------
-
 async function createOrder(data) {
-  const connection = await pool.getConnection();
-  try {
-    await connection.beginTransaction();
-    const [result] = await connection.query(
-      `INSERT INTO orders 
-       (customer_id, order_date, delivery_date,  delivery_address, delivery_area, delivery_notes, status, payment_status, is_monthly_order ,items,total_amount,)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ? , ?)`,
-      [
-        data.customer_id,
-        data.order_date,
-        data.delivery_date,
-        data.total_amount,
-        data.delivery_address || null,
-        data.delivery_area || null,
-        data.delivery_notes || null,
-        data.status || "pending",
-        data.payment_status || "pending",
-        data.is_monthly_order || false,
-        JSON.stringify(data.items || [])
-      ]
-    );
-
-    const orderId = result.insertId;
-
-    if (Array.isArray(data.products)) {
-      for (const item of data.products) {
-        await connection.query(
-          `INSERT INTO order_items (order_id, product_id, quantity, unit_price, total) VALUES (?, ?, ?, ?, ?)`,
-          [orderId, item.product_id, item.quantity, item.unit_price, item.total]
-        );
-      }
-    }
-
-    await connection.commit();
-    return await getOrderById(orderId);
-  } catch (err) {
-    await connection.rollback();
-    throw err;
-  } finally {
-    connection.release();
-  }
+  const [result] = await pool.query(
+    `INSERT INTO orders 
+       (customer_id, order_date, product_details, delivery_date, delivery_street_address, delivery_area, delivery_town, delivery_city, delivery_pincode, delivery_notes, total_amount, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      data.customer_id,
+      data.order_date,
+      JSON.stringify(data.product_details || []),
+      data.delivery_date,
+      data.delivery_street_address,
+      data.delivery_area,
+      data.delivery_town,
+      data.delivery_city,
+      data.delivery_pincode,
+      data.delivery_notes || null,
+      data.total_amount,
+      data.status || "scheduled",
+    ]
+  );
+  return getOrderById(result.insertId);
 }
 
 async function updateOrder(id, data) {
@@ -141,32 +116,27 @@ async function updateOrder(id, data) {
 
     await connection.query(
       `UPDATE orders SET
-         customer_id=?, order_date=?, delivery_date=?, total_amount=?, delivery_address=?, delivery_area=?, delivery_notes=?, status=?, payment_status=?, is_monthly_order=?, updated_date=NOW()
+         customer_id=?, order_date=?, product_details=?, delivery_date=?,  
+         delivery_street_address=?, delivery_area=?, delivery_town=?, 
+         delivery_city=?, delivery_pincode=?, delivery_notes=?, 
+         total_amount=?, status=?, updated_date=NOW()
        WHERE id=?`,
       [
         data.customer_id,
         data.order_date,
+        JSON.stringify(data.product_details || []),
         data.delivery_date,
-        data.total_amount,
-        data.delivery_address || null,
-        data.delivery_area || null,
+        data.delivery_street_address,
+        data.delivery_area,
+        data.delivery_town,
+        data.delivery_city,
+        data.delivery_pincode,
         data.delivery_notes || null,
+        data.total_amount,
         data.status || "pending",
-        data.payment_status || "pending",
-        data.is_monthly_order || false,
-        id
+        id,
       ]
     );
-
-    await connection.query(`DELETE FROM order_items WHERE order_id=?`, [id]);
-    if (Array.isArray(data.products)) {
-      for (const item of data.products) {
-        await connection.query(
-          `INSERT INTO order_items (order_id, product_id, quantity, unit_price, total) VALUES (?, ?, ?, ?, ?)`,
-          [id, item.product_id, item.quantity, item.unit_price, item.total]
-        );
-      }
-    }
 
     await connection.commit();
     return await getOrderById(id);
@@ -189,5 +159,5 @@ module.exports = {
   getOrderById,
   createOrder,
   updateOrder,
-  deleteOrder
+  deleteOrder,
 };
