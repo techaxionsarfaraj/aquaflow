@@ -36,14 +36,17 @@
   </div>
 
   <!-- Filters -->
-  <div class="flex flex-wrap items-center gap-3 mb-6">
+  <div class="flex flex-wrap items-center gap-3 mb-6 p-4 rounded-md bg-white shadow">
     <input
       v-model="search"
       type="text"
-      placeholder="Search by Order ID, Customer, or Phone"
-      class="border rounded-md px-3 py-2 w-full md:w-1/3"
+      placeholder="Search by Order ID, Customer, Phone, or Delivery Area"
+      class="text-base flex-1 border px-3 py-2 rounded-lg focus:outline"
     />
-    <select v-model="statusFilter" class="border rounded-md px-3 py-2">
+    <select
+      v-model="statusFilter"
+      class="text-sm border px-3 py-2 rounded-lg focus:outline cursor-pointer"
+    >
       <option value="">All Status</option>
       <option value="pending">Pending</option>
       <option value="confirmed">Confirmed</option>
@@ -51,72 +54,128 @@
       <option value="delivered">Delivered</option>
       <option value="cancelled">Cancelled</option>
     </select>
-    <button @click="clearFilters" class="px-3 py-2 border rounded-md hover:bg-gray-100">
+    <button
+      @click="clearFilters"
+      class="text-sm border px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+    >
       Clear
     </button>
   </div>
-
   <!-- Orders Table -->
-  <div class="bg-white rounded-lg shadow overflow-x-auto">
-    <table class="min-w-full text-sm">
-      <thead>
-        <tr class="bg-gray-100 text-left text-gray-600">
-          <th class="px-4 py-3">Order ID</th>
-          <th class="px-4 py-3">Customer</th>
-          <th class="px-4 py-3">Products</th>
-          <th class="px-4 py-3">Total</th>
-          <th class="px-4 py-3">Status</th>
-          <th class="px-4 py-3 text-right">Actions</th>
-          <th class="px-4 py-3">Date</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="order in filteredOrders" :key="order.id" class="border-b hover:bg-gray-50">
-          <td class="px-4 py-3 font-medium">#{{ order.id }}</td>
+  <div v-if="filteredOrders.length" class="bg-white rounded-lg shadow overflow-hidden">
+    <!-- Table Header -->
+    <div class="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 text-gray-600 font-semibold text-sm">
+      <div class="col-span-1">Order ID</div>
+      <div class="col-span-2">Customer</div>
+      <div class="col-span-2">Products</div>
+      <div class="col-span-1">Order Date</div>
+      <div class="col-span-1">Delivery Date</div>
+      <div class="col-span-2">Delivery Address</div>
+      <div class="col-span-1">Total</div>
+      <div class="col-span-1">Status</div>
+      <div class="col-span-1 text-right">Actions</div>
+    </div>
 
-          <td class="px-4 py-3">
-            <div class="font-medium">{{ order.customer_name }}</div>
-            <div class="text-gray-500 text-xs">{{ order.customer_phone }}</div>
-          </td>
-          <td class="px-4 py-3">
-            <template v-if="order.product_details && order.product_details.length">
-              <div
-                v-for="(p, idx) in order.product_details"
-                :key="idx"
-                class="text-xs text-gray-700"
-              >
-                • {{ p.product_name }} (x{{ p.quantity }}) - ₹{{ p.total }}
-              </div>
-            </template>
-            <span v-else class="text-gray-400">No products</span>
-          </td>
+    <!-- Order Rows -->
+    <div
+      v-for="order in filteredOrders"
+      :key="order.id"
+      class="grid grid-cols-12 gap-4 items-center px-6 py-4 border-t hover:bg-gray-50 transition"
+    >
+      <!-- Order ID -->
+      <div class="col-span-1 font-medium">ORD-{{ order.id }}</div>
 
-          <td class="px-4 py-3 font-semibold">₹{{ order.total_amount }}</td>
-          <td class="px-4 py-3">
-            <span
-              :class="statusClass(order.status)"
-              class="px-2 py-1 rounded-full text-xs font-medium"
-            >
-              {{ order.status }}
-            </span>
-          </td>
-          <td class="px-4 py-3 text-right space-x-2">
-            <button @click="editOrder(order)" class="text-blue-600 hover:underline">Edit</button>
-            <button @click="removeOrder(order.id)" class="text-red-600 hover:underline">
-              Delete
-            </button>
-          </td>
-          <td class="px-4 py-3">{{ formatDate(order.order_date) }}</td>
-        </tr>
-        <tr v-if="loading">
-          <td colspan="7" class="px-4 py-3 text-center text-gray-500">Loading orders...</td>
-        </tr>
-        <tr v-if="!loading && filteredOrders.length === 0">
-          <td colspan="7" class="px-4 py-3 text-center text-gray-500">No orders found</td>
-        </tr>
-      </tbody>
-    </table>
+      <!-- Customer -->
+      <div class="col-span-2 flex items-center space-x-3">
+        <div
+          class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600"
+        >
+          {{ order.customer_name?.charAt(0).toUpperCase() }}
+        </div>
+        <div>
+          <p class="font-semibold capitalize">{{ order.customer_name }}</p>
+          <p class="text-sm text-gray-500">{{ order.customer_phone }}</p>
+        </div>
+      </div>
+
+      <!-- Products -->
+      <div class="col-span-2 text-sm text-gray-700">
+        <template v-if="order.product_details && order.product_details.length">
+          <div v-for="(p, idx) in order.product_details" :key="idx" class="text-xs text-gray-700">
+            • {{ p.product_name }} ({{ p.unit_price }} x {{ p.quantity }}) = ₹{{ p.total }}
+          </div>
+        </template>
+        <span v-else class="text-gray-400">No products</span>
+      </div>
+
+      <!-- Order Date -->
+      <div class="col-span-1 text-sm text-gray-700">
+        {{
+          new Intl.DateTimeFormat('en-IN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+          }).format(new Date(order.order_date))
+        }}
+      </div>
+
+      <!-- Delivery Date -->
+      <div class="col-span-1 text-sm text-gray-700">
+        {{
+          new Intl.DateTimeFormat('en-IN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+          }).format(new Date(order.delivery_date))
+        }}
+      </div>
+
+      <!--Delivery Address -->
+      <div class="col-span-2 text-sm text-gray-700 capitalize">
+        {{ order.delivery_street_address }} <br /> <span class="font-semibold"> {{ order.delivery_area }}</span> <br />
+        {{ order.delivery_town }}
+      </div>
+
+      <!-- Total -->
+      <div class="col-span-1 font-semibold">₹{{ order.total_amount }}</div>
+
+      <!-- Status -->
+      <div class="col-span-1">
+        <span
+          :class="[
+            'text-xs px-2 py-1 rounded-full font-semibold capitalize',
+            order.status?.toLowerCase() === 'scheduled'
+              ? 'bg-blue-100 text-blue-600'
+              : order.status?.toLowerCase() === 'pending'
+                ? 'bg-yellow-100 text-yellow-600'
+                : order.status?.toLowerCase() === 'out_for_delivery'
+                  ? 'bg-orange-100 text-orange-600'
+                  : order.status?.toLowerCase() === 'delivered'
+                    ? 'bg-green-100 text-green-600'
+                    : order.status?.toLowerCase() === 'cancelled'
+                      ? 'bg-red-100 text-red-600'
+                      : 'bg-gray-200 text-gray-600',
+          ]"
+        >
+          {{ order.status }}
+        </span>
+      </div>
+
+      <!-- Actions -->
+      <div class="col-span-1 flex justify-end space-x-3">
+        <button @click="editOrder(order)" class="text-gray-500 hover:text-blue-600">
+          <i class="fa-regular fa-pen-to-square"></i>
+        </button>
+        <button @click="removeOrder(order.id)" class="text-red-400 hover:text-red-500">
+          <i class="fa-regular fa-trash-can"></i>
+        </button>
+      </div>
+    </div>
   </div>
+
+  <!-- No Orders -->
+  <div v-else class="p-6 text-center text-gray-500">No orders found.</div>
+
   <!-- Add/Edit Modal -->
   <div
     v-if="showForm"
@@ -235,10 +294,12 @@ function calculateStats() {
 // Filtered orders
 const filteredOrders = computed(() => {
   return orders.value.filter((o) => {
+    const searchTerm = search.value.toLowerCase()
     return (
       (!search.value ||
-        o.customer_name.toLowerCase().includes(search.value.toLowerCase()) ||
+        o.customer_name?.toLowerCase().includes(searchTerm) ||
         o.customer_phone?.includes(search.value) ||
+        o.delivery_area?.toLowerCase().includes(searchTerm) ||
         o.id.toString().includes(search.value)) &&
       (!statusFilter.value || o.status === statusFilter.value)
     )

@@ -87,33 +87,71 @@ async function getOrderById(id) {
 }
 
 async function createOrder(data) {
-  const [result] = await pool.query(
-    `INSERT INTO orders 
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // 1. Insert the order
+    const [result] = await connection.query(
+      `INSERT INTO orders 
        (customer_id, order_date, product_details, delivery_date, delivery_street_address, delivery_area, delivery_town, delivery_city, delivery_pincode, delivery_notes, total_amount, status)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      data.customer_id,
-      data.order_date,
-      JSON.stringify(data.product_details || []),
-      data.delivery_date,
-      data.delivery_street_address,
-      data.delivery_area,
-      data.delivery_town,
-      data.delivery_city,
-      data.delivery_pincode,
-      data.delivery_notes || null,
-      data.total_amount,
-      data.status || "scheduled",
-    ]
-  );
-  return getOrderById(result.insertId);
+      [
+        data.customer_id,
+        data.order_date,
+        JSON.stringify(data.product_details || []),
+        data.delivery_date,
+        data.delivery_street_address,
+        data.delivery_area,
+        data.delivery_town,
+        data.delivery_city,
+        data.delivery_pincode,
+        data.delivery_notes || null,
+        data.total_amount,
+        data.status || "scheduled",
+      ]
+    );
+
+    const orderId = result.insertId;
+
+    // 2. Deduct stock for each product
+    for (const item of data.product_details) {
+      await connection.query(
+        `UPDATE products SET available_stock = available_stock - ? WHERE id = ?`,
+        [item.quantity, item.product_id]
+      );
+    }
+
+    await connection.commit();
+    return await getOrderById(orderId);
+  } catch (err) {
+    await connection.rollback();
+    throw err;
+  } finally {
+    connection.release();
+  }
 }
+
 
 async function updateOrder(id, data) {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
 
+    // 1. Fetch existing order
+    const existingOrder = await getOrderById(id);
+
+    if (!existingOrder) throw new Error("Order not found");
+
+    // 2. Restore previous product stocks
+    for (const item of existingOrder.product_details) {
+      await connection.query(
+        `UPDATE products SET available_stock = available_stock + ? WHERE id = ?`,
+        [item.quantity, item.product_id]
+      );
+    }
+
+    // 3. Update order
     await connection.query(
       `UPDATE orders SET
          customer_id=?, order_date=?, product_details=?, delivery_date=?,  
@@ -138,6 +176,14 @@ async function updateOrder(id, data) {
       ]
     );
 
+    // 4. Deduct new product stocks
+    for (const item of data.product_details) {
+      await connection.query(
+        `UPDATE products SET available_stock = available_stock - ? WHERE id = ?`,
+        [item.quantity, item.product_id]
+      );
+    }
+
     await connection.commit();
     return await getOrderById(id);
   } catch (err) {
@@ -147,6 +193,7 @@ async function updateOrder(id, data) {
     connection.release();
   }
 }
+
 
 async function deleteOrder(id) {
   await pool.query("DELETE FROM orders WHERE id = ?", [id]);

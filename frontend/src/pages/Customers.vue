@@ -268,7 +268,7 @@
 
       <!-- Actions -->
       <div class="col-span-1 flex justify-end space-x-3">
-        <button @click="openForm(c)" class="text-gray-500 hover:text-green-600">
+        <button @click="openForm(c)" class="text-gray-500 hover:text-blue-600">
           <i class="fa-regular fa-pen-to-square"></i>
         </button>
         <button @click="confirmDelete(c.id)" class="text-red-400 hover:text-red-500">

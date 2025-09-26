@@ -1,7 +1,6 @@
 <!-- ./src/components/orders/OrderForm.vue -->
 <template>
   <form @submit.prevent="saveOrder" class="space-y-4">
-
     <!-- Customer -->
     <div>
       <label class="block text-sm font-medium mb-1">Customer *</label>
@@ -72,7 +71,7 @@
             <div
               class="w-full border rounded-md px-2 py-1 text-center text-sm font-semibold bg-gray-100"
             >
-              {{ (products.find((p) => p.id === item.product_id) || {}).available_stock ?? '' }}
+              {{ (products.find((p) => p.id === item.product_id) || {}).available_stock ?? '0' }}
             </div>
           </div>
 
@@ -114,12 +113,13 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <!-- Delivery Date -->
       <div>
-        <label class="block text-sm font-medium mb-1">Delivery Date *</label>
+        <label class="block text-sm font-medium mb-1">Delivery Date</label>
         <input
           v-model="form.delivery_date"
           type="date"
           required
           class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
+          :min="new Date().toISOString().split('T')[0]"
         />
       </div>
 
@@ -173,23 +173,34 @@
         />
       </div>
     </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Order Date (only on edit) -->
+      <div v-if="form.id">
+        <label class="block text-sm font-medium mb-1">Order Date</label>
+        <input
+          v-model="form.order_date"
+          type="date"
+          class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
+          readonly
+        />
+      </div>
 
-    <!-- Status -->
-    <div>
-      <label class="block text-sm font-medium mb-1">Status</label>
-      <select
-        v-model="form.status"
-        required
-        class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
-      >
-        <option value="scheduled">Scheduled</option>
-        <option value="pending">Pending</option>
-        <option value="out_for_delivery">Out for Delivery</option>
-        <option value="delivered">Delivered</option>
-        <option value="cancelled">Cancelled</option>
-      </select>
+      <!-- Status -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Status</label>
+        <select
+          v-model="form.status"
+          required
+          class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
+        >
+          <option value="scheduled">Scheduled</option>
+          <option value="pending">Pending</option>
+          <option value="out_for_delivery">Out for Delivery</option>
+          <option value="delivered">Delivered</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
     </div>
-
     <!-- Delivery Notes -->
     <div>
       <label class="block text-sm font-medium mb-1">Delivery Notes</label>
@@ -219,7 +230,6 @@
         {{ form.id ? 'Update Order' : 'Create Order' }}
       </button>
     </div>
-
   </form>
 </template>
 
@@ -241,10 +251,10 @@ export default {
         delivery_area: '',
         delivery_town: '',
         delivery_city: '',
-        delivery_pincode: '',        
+        delivery_pincode: '',
         delivery_notes: '',
         total_amount: 0,
-        status: 'pending',        
+        status: 'pending',
       },
       customers: [],
       products: [],
@@ -264,6 +274,8 @@ export default {
             ...this.form,
             ...o,
             product_details: o.product_details || [],
+            delivery_date: this.formatLocalDate(o.delivery_date),
+            order_date: this.formatLocalDate(o.order_date),
           }
         }
       },
@@ -299,7 +311,9 @@ export default {
       this.form.product_details.splice(index, 1)
     },
     updatePrice(index) {
-      const product = this.products.find((p) => p.id === this.form.product_details[index].product_id)
+      const product = this.products.find(
+        (p) => p.id === this.form.product_details[index].product_id,
+      )
       if (product) {
         this.form.product_details[index].unit_price = product.price_per_unit || 0
         this.calcSubtotal(index)
@@ -312,15 +326,34 @@ export default {
     async saveOrder() {
       try {
         const payload = { ...this.form, total_amount: this.totalAmount }
+        let response
         if (this.form.id) {
-          await updateOrder(this.form.id, payload)
+          response = await updateOrder(this.form.id, payload)
         } else {
-          await createOrder(payload)
+          response = await createOrder(payload)
         }
+
+        // Update available_stock locally
+        this.form.product_details.forEach((item) => {
+          const product = this.products.find((p) => p.id === item.product_id)
+          if (product) {
+            product.available_stock -= item.quantity
+          }
+        })
+
         this.$emit('saved')
       } catch (err) {
         console.error('Save failed:', err)
       }
+    },
+
+    formatLocalDate(dateStr) {
+      if (!dateStr) return ''
+      const d = new Date(dateStr)
+      const year = d.getFullYear()
+      const month = String(d.getMonth() + 1).padStart(2, '0')
+      const day = String(d.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
     },
   },
   mounted() {

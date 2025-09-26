@@ -110,26 +110,6 @@ async function seedAll() {
     }
 
     // ----------------------------
-    // Order Items
-    // ----------------------------
-    for (let i = 0; i < 10; i++) {
-      const orderId = orderIds[i];
-      const numItems = Math.floor(Math.random() * 3) + 1; // 1-3 products per order
-
-      for (let j = 0; j < numItems; j++) {
-        const productIndex = (i + j) % productIds.length;
-        const product = products[productIndex];
-        const quantity = Math.floor(Math.random() * 5) + 1;
-        const total = quantity * product[3];
-
-        await connection.query(
-          `INSERT INTO order_items (order_id, product_id, quantity, unit_price, total) VALUES (?, ?, ?, ?, ?)`,
-          [orderId, productIds[productIndex], quantity, product[3], total]
-        );
-      }
-    }
-
-    // ----------------------------
     // Payments
     // ----------------------------
     for (let i = 0; i < 10; i++) {
