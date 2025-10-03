@@ -6,6 +6,15 @@ export default {
   theme: {
     extend: {},
   },
+   safelist: [
+    'bg-blue-900',
+    'opacity-0',
+    'min-w-full',
+    'px-4', 
+    'pb-6',
+    'py-6',
+    // add all utility classes your invoice needs
+  ],
   variants: {
     extend: {},
   },

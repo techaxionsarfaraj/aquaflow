@@ -13,11 +13,13 @@ exports.generateBill = async (req, res) => {
   try {
     const { order_id } = req.body;
     if (!order_id) {
-      return res.status(400).json({ success: false, error: "order_id is required" });
+      return res
+        .status(400)
+        .json({ success: false, error: "order_id is required" });
     }
 
     const order = await orderModel.getOrderById(order_id);
-    console.log(order);
+    // console.log(order);
     if (!order) {
       return res.status(404).json({ success: false, error: "Order not found" });
     }
@@ -61,6 +63,7 @@ exports.generateBill = async (req, res) => {
   </div>
 
   <!-- Company Info -->
+  <div class="px-8">
   <div class="max-w-4xl mx-auto p-6 bg-white shadow mt-6 rounded-lg">
     <div class="flex justify-between items-start border-b border-gray-100 ">
       <div class="flex flex-col gap-2 pb-6">
@@ -100,21 +103,39 @@ exports.generateBill = async (req, res) => {
         </div>
       </div>
       <div class="text-right text-sm text-gray-700">
-        <p class="text-left"><span class="font-semibold text-gray-900">Invoice :</span> #ORD-${order.id}</p>
-        <p class="text-left"><span class="font-semibold text-gray-900">Date:</span> ${new Date(order.order_date).toLocaleDateString()}</p>
-        <p class="text-left"><span class="font-semibold text-gray-900">Delivery Date:</span> ${new Date(order.delivery_date).toLocaleDateString()}</p>
+        <p class="text-left"><span class="font-semibold text-gray-900">Invoice :</span> #ORD-${
+          order.id
+        }</p>
+        <p class="text-left"><span class="font-semibold text-gray-900">Date:</span> ${new Date(
+          order.order_date
+        ).toLocaleDateString()}</p>
+        <p class="text-left"><span class="font-semibold text-gray-900">Delivery Date:</span> ${new Date(
+          order.delivery_date
+        ).toLocaleDateString()}</p>
       </div>
     </div>
 
     <!-- Bill To -->
     <div class="mt-6">
       <p class="text-gray-800 text-md mb-3"> <span class="font-semibold"> Bill To:</span></p>
-      <p class="text-gray-700 text-sm mb-1"><i class="fa-regular fa-user"></i> ${order.customer_name}</p>
-      <p class="text-gray-700 text-sm mb-1"><i class="fa-regular fa-envelope"></i> ${order.customer_email || ""}</p>
-      <p class="text-gray-700 text-sm mb-1"><i class="fa-regular fa-phone"></i> +91 ${order.customer_phone || ""}</p>
-      <p class="text-gray-700 text-sm mb-1"><i class="fa-regular fa-location-dot"></i> ${order.delivery_street_address || ""}</p>
-      <p class="text-gray-700 text-sm mb-1"><i class="fa-regular fa-location-dot opacity-0"></i> ${order.delivery_area || ""} ${order.delivery_town || ""} </p>
-      <p class="text-gray-700 text-sm"><i class="fa-regular fa-location-dot opacity-0"></i> ${order.delivery_city || ""} - ${order.delivery_pincode || ""}</p>
+      <p class="text-gray-700 text-sm mb-1"><i class="fa-regular fa-user"></i> ${
+        order.customer_name
+      }</p>
+      <p class="text-gray-700 text-sm mb-1"><i class="fa-regular fa-envelope"></i> ${
+        order.customer_email || ""
+      }</p>
+      <p class="text-gray-700 text-sm mb-1"><i class="fa-regular fa-phone"></i> +91 ${
+        order.customer_phone || ""
+      }</p>
+      <p class="text-gray-700 text-sm mb-1"><i class="fa-regular fa-location-dot"></i> ${
+        order.delivery_street_address || ""
+      }</p>
+      <p class="text-gray-700 text-sm mb-1"><i class="fa-regular fa-location-dot opacity-0"></i> ${
+        order.delivery_area || ""
+      } ${order.delivery_town || ""} </p>
+      <p class="text-gray-700 text-sm"><i class="fa-regular fa-location-dot opacity-0"></i> ${
+        order.delivery_city || ""
+      } - ${order.delivery_pincode || ""}</p>
     </div>
 
     <!-- Items Table -->
@@ -137,7 +158,9 @@ exports.generateBill = async (req, res) => {
               <td class="px-4 py-2">${p.product_name || "Item"}</td>
               <td class="px-4 py-2">${p.description || "-"}</td>
               <td class="px-4 py-2 text-right">${p.quantity || 0}</td>
-              <td class="px-4 py-2 text-right">${formatCurrency(p.unit_price || 0)}</td>
+              <td class="px-4 py-2 text-right">${formatCurrency(
+                p.unit_price || 0
+              )}</td>
               <td class="px-4 py-2 text-right">${formatCurrency(
                 p.total || (p.quantity || 0) * (p.unit_price || 0)
               )}</td>
@@ -164,6 +187,7 @@ exports.generateBill = async (req, res) => {
       Powered by AquaFlow
     </div>
   </div>
+  </div>
 </body>
 </html>
 `;
@@ -171,10 +195,13 @@ exports.generateBill = async (req, res) => {
     fs.writeFileSync(filePath, htmlContent, "utf-8");
 
     // save bill URL into database
-    await db.query("UPDATE orders SET bill_url = ? WHERE id = ?", [filename, order_id]);
+    await db.query("UPDATE orders SET bill_url = ? WHERE id = ?", [
+      filename,
+      order_id,
+    ]);
 
     const url = `${req.protocol}://${req.get("host")}/invoices/${filename}`;
-    return res.json({ success: true, url });
+    return res.json({ success: true, file_name: filename });
   } catch (err) {
     console.error("generateBill error", err);
     return res.status(500).json({ success: false, error: err.message });

@@ -96,15 +96,6 @@
       <div class="col-span-1 font-semibold">₹{{ order.total_amount }}</div>
 
       <!-- Actions -->
-      <!-- <div class="col-span-1 flex justify-end">
-        <button
-          @click="generateBill(order)"
-          class="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-        >
-          Generate Bill
-        </button>
-      </div> -->
-      <!-- Actions -->
       <div class="col-span-1 flex justify-end space-x-2">
         <!-- If no bill yet -->
         <button
@@ -119,14 +110,14 @@
         <template v-else>
           <button
             @click="viewBill(order.bill_url)"
-            class="w-8 h-8 flex items-center justify-center rounded-full bg-blue-100 hover:bg-blue-700 text-blue-600  hover:text-white transition-colors"
+            class="w-8 h-8 flex items-center justify-center rounded-full bg-blue-100 hover:bg-blue-700 text-blue-600 hover:text-white transition-colors"
           >
-            <i class="fa-regular fa-eye  text-sm"></i>
+            <i class="fa-regular fa-eye text-sm"></i>
           </button>
           <!-- <div class=" bg-green-500 text-white rounded hover:bg-green-600"><span><i class="fa-regular fa-building text-blue-600"></i></span></div> -->
           <button
             @click="shareBill(order)"
-            class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700  hover:text-gray-900 transition-colors"
+            class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900 transition-colors"
           >
             <i class="fa-regular fa-share-nodes"></i>
           </button>
@@ -146,31 +137,32 @@
       <!-- Header -->
       <div class="flex justify-between items-center p-4 border-b">
         <h3 class="text-lg font-bold">Invoice Preview</h3>
+        <div class="flex justify-between gap-3">
+          <button
+            :disabled="!invoiceHtml"
+            @click="printInvoice"
+            class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900 transition-colors"
+          >
+            <i class="fa-regular fa-print"></i>
+          </button>
 
-        <button @click="showBillModal = false" class="text-gray-600 hover:text-gray-900">✖</button>
+          <button @click="showBillModal = false" class="text-gray-600 hover:text-gray-900">
+            ✖
+          </button>
+        </div>
       </div>
 
-      <!-- Iframe -->
-      <iframe
-        v-if="billUrlInModal"
-        ref="billIframe"
-        :src="billUrlInModal"
-        class="flex-1 w-full"
-        @load="iframeLoaded = true"
-      >
-      </iframe>
-      <button
-        :disabled="!iframeLoaded"
-        @click="billIframe.value?.contentWindow?.print()"
-        class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 mr-2 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        Print
-      </button>
+      <!-- Invoice HTML instead of iframe -->
+      <div class="flex-1 w-full overflow-auto p-4">
+        <div v-if="invoiceHtml" v-html="invoiceHtml"></div>
+        <div v-else class="text-gray-500 text-center mt-10">Loading invoice...</div>
+      </div>
+
       <!-- Footer -->
       <div class="p-4 border-t text-right">
         <button
           @click="showBillModal = false"
-          class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          class="px-3 py-2 rounded-md font-semibold text-sm border hover:bg-gray-100 transition-colors"
         >
           Close
         </button>
@@ -188,15 +180,19 @@ const orders = ref([])
 const loading = ref(true)
 
 const showBillModal = ref(false)
-const billUrlInModal = ref('')
-const billIframe = ref(null)
-const iframeLoaded = ref(false)
+const invoiceHtml = ref('') // store invoice HTML
 
+// Fetch delivered orders
 const fetchOrders = async () => {
   loading.value = true
   try {
     const { data } = await getDeliveredOrders()
-    orders.value = Array.isArray(data) ? data : [data]
+    orders.value = (Array.isArray(data) ? data : [data]).map((order) => {
+      if (order.bill_file_name && !order.bill_url) {
+        order.bill_url = `http://localhost:5000/bills/${order.bill_file_name}`
+      }
+      return { ...order } // ensure reactivity
+    })
   } catch (err) {
     console.error('Error fetching delivered orders:', err)
     orders.value = []
@@ -219,73 +215,138 @@ const parseProducts = (json) => {
 // Format date
 const formatDate = (dateStr) => {
   const d = new Date(dateStr)
-  return d.toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
+  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 // Generate bill
-// const generateBill = async (order) => {
-//   try {
-//     const res = await axios.post('http://localhost:5000/api/billing/generate-bill', {
-//       order_id: order.id,
-//     })
-
-//     if (res.data && res.data.url) {
-//       // open invoice in new tab
-//       window.open(res.data.url, '_blank')
-//     } else {
-//       alert('Invoice generated but no URL returned')
-//     }
-//   } catch (err) {
-//     console.error('Failed to generate invoice', err)
-//     alert('Failed to generate bill')
-//   }
-// }
-
 const generateBill = async (order) => {
   try {
     const res = await axios.post('http://localhost:5000/api/billing/generate-bill', {
       order_id: order.id,
     })
 
-    if (res.data && res.data.url) {
-      order.bill_url = res.data.url // save in current list so UI updates
-      alert('Bill generated successfully!')
+    if (res.data && res.data.file_name) {
+      const billUrl = `http://localhost:5000/invoices/${res.data.file_name}`
+
+      // Update order
+      const index = orders.value.findIndex(o => o.id === order.id)
+      if (index !== -1) {
+        orders.value[index] = { ...orders.value[index], bill_url: billUrl, bill_file_name: res.data.file_name }
+      }
+
+      // Show toast
+      const toast = document.createElement('div')
+      toast.classList.add(
+        'fixed',
+        'top-0',
+        'right-0',
+        'm-2',
+        'bg-green-500',
+        'text-white',
+        'px-4',
+        'py-2',
+        'rounded'
+      )
+      toast.innerHTML = 'Bill generated successfully!'
+      document.body.appendChild(toast)
+      setTimeout(() => toast.remove(), 3000)
+
+      // Fetch HTML and show in modal
+      const htmlRes = await axios.get(billUrl, { responseType: 'text' })
+      invoiceHtml.value = htmlRes.data
+      // showBillModal.value = true
     } else {
-      alert('Bill generated but no URL returned')
+      const toast = document.createElement('div')
+      toast.classList.add(
+        'fixed',
+        'top-0',
+        'right-0',
+        'm-2',
+        'bg-red-500',
+        'text-white',
+        'px-4',
+        'py-2',
+        'rounded'
+      )
+      toast.innerHTML = 'Invoice generated but no file returned'
+      document.body.appendChild(toast)
+      setTimeout(() => toast.remove(), 3000)
     }
   } catch (err) {
     console.error(err)
-    alert('Failed to generate bill')
+    const toast = document.createElement('div')
+    toast.classList.add(
+      'fixed',
+      'top-0',
+      'right-0',
+      'm-2',
+      'bg-red-500',
+      'text-white',
+      'px-4',
+      'py-2',
+      'rounded'
+    )
+    toast.innerHTML = 'Failed to generate bill'
+    document.body.appendChild(toast)
+    setTimeout(() => toast.remove(), 3000)
   }
 }
-const viewBill = (billUrl) => {
-  iframeLoaded.value = false
-  billUrlInModal.value = billUrl
-  showBillModal.value = true
+
+// View bill in modal
+// const viewBill = (billUrl) => {
+//   iframeLoaded.value = false
+//   billUrlInModal.value = billUrl
+//   showBillModal.value = true
+// }
+// View bill (fetch HTML)
+const viewBill = async (billUrl) => {
+  try {
+    const res = await axios.get(billUrl, { responseType: 'text' })
+    invoiceHtml.value = res.data
+    showBillModal.value = true
+  } catch (err) {
+    console.error('Error loading invoice HTML:', err)
+    alert('Failed to load invoice')
+  }
 }
 
+// Share bill
 const shareBill = async (order) => {
-  const text = `Invoice for Order #ORD-${order.id} | Total: ₹${order.total_amount}`;
-  const url = order.bill_url;
+  const text = `Invoice for Order #ORD-${order.id} | Total: ₹${order.total_amount}`
+  const url = order.bill_url
 
   if (navigator.share) {
     try {
-      await navigator.share({
-        title: `Invoice #ORD-${order.id}`,
-        text,
-        url,
-      });
-      console.log('Bill shared successfully');
+      await navigator.share({ title: `Invoice #ORD-${order.id}`, text, url })
     } catch (err) {
-      console.error('Error sharing bill:', err);
+      console.error('Error sharing bill:', err)
     }
   } else {
-    alert('Sharing is not supported on this browser. You can copy the link: ' + url);
+    alert('Sharing not supported. Copy link: ' + url)
   }
-};
+}
 
+// Print Invoice
+const printInvoice = () => {
+  if (!invoiceHtml.value) return alert('Invoice not ready yet!')
+
+  const win = window.open('', '_blank')
+  win.document.writeln(`
+    <html>
+      <head>
+        <title>Invoice</title>
+        <style>
+          body { font-family: Arial, sans-serif; }
+          .invoice { max-width: 800px; margin: auto; }
+        </style>
+      </head>
+      <body>
+        ${invoiceHtml.value}
+      </body>
+    </html>
+  `)
+  win.document.close()
+  win.focus()
+  win.print()
+}
 </script>

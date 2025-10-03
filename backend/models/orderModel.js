@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS orders (
     delivery_notes TEXT,
     total_amount DECIMAL(10,2) NOT NULL,
     status ENUM('pending','scheduled','out_for_delivery','delivered','cancelled') DEFAULT 'scheduled',
+    bill_url VARCHAR(255),
     updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,    
     created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
@@ -64,7 +65,7 @@ async function getAllOrders() {
 }
 async function getAllDeliveredOrders() {
   const [rows] = await pool.query(`
-    SELECT o.id, o.order_date, o.product_details, o.delivery_date, o.delivery_street_address,o.delivery_area, o.delivery_town,o.delivery_city,o.delivery_pincode,o.delivery_notes,o.status,o.delivery_pincode,  c.name AS customer_name, c.phone, c.email, o.total_amount 
+    SELECT o.id, o.order_date, o.product_details, o.delivery_date, o.delivery_street_address,o.delivery_area, o.delivery_town,o.delivery_city,o.delivery_pincode,o.delivery_notes,o.status,o.delivery_pincode,o.bill_url, c.name AS customer_name, c.phone, c.email, o.total_amount 
        FROM orders o 
        JOIN customers c ON o.customer_id = c.id 
        WHERE o.status = 'delivered'
@@ -143,7 +144,6 @@ async function createOrder(data) {
   }
 }
 
-
 async function updateOrder(id, data) {
   const connection = await pool.getConnection();
   try {
@@ -204,7 +204,6 @@ async function updateOrder(id, data) {
     connection.release();
   }
 }
-
 
 async function deleteOrder(id) {
   await pool.query("DELETE FROM orders WHERE id = ?", [id]);
