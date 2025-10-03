@@ -11,6 +11,17 @@ exports.getAll = async (req, res) => {
   }
 };
 
+exports.getAllDeliveredOrders = async (req, res) => {
+  try {
+    const rows = await orderModel.getAllDeliveredOrders();
+    /* console.log(rows);*/
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Something went wrong!" });
+  }
+};
+
 exports.getById = async (req, res) => {
   try {
     const order = await orderModel.getOrderById(req.params.id);

@@ -8,6 +8,7 @@
         v-model="form.customer_id"
         required
         class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
+        :disabled="readOnly"
       >
         <option value="">Select Customer</option>
         <option v-for="c in customers" :key="c.id" :value="c.id">
@@ -33,6 +34,7 @@
               @change="updatePrice(index)"
               required
               class="w-full border rounded-md px-2 py-1 text-sm"
+              :disabled="readOnly"
             >
               <option value="">Select product</option>
               <option v-for="p in products" :key="p.id" :value="p.id">
@@ -50,6 +52,7 @@
               v-model.number="item.quantity"
               @input="calcSubtotal(index)"
               class="w-full border rounded-md px-2 py-1 text-center text-sm"
+              :disabled="readOnly"
             />
           </div>
 
@@ -66,14 +69,14 @@
           </div>
 
           <!-- Available Stock -->
-          <div class="col-span-2">
+          <div class="col-span-2" v-if="!readOnly">
             <label class="block text-xs font-medium mb-2">Available Stock</label>
             <div
               class="w-full border rounded-md px-2 py-1 text-center text-sm font-semibold bg-gray-100"
             >
               {{ (products.find((p) => p.id === item.product_id) || {}).available_stock ?? '0' }}
             </div>
-          </div>
+          </div>         
 
           <!-- Total -->
           <div class="col-span-2">
@@ -88,6 +91,7 @@
           <!-- Remove -->
           <div class="col-span-1 text-center">
             <button
+              v-if="!readOnly"
               type="button"
               @click="removeItem(index)"
               class="text-red-500 hover:text-red-700 border border-red-500 hover:border-red-700 rounded-md p-1 transition-colors mt-6"
@@ -100,6 +104,7 @@
       <!-- Add Item -->
       <div class="mt-2">
         <button
+          v-if="!readOnly"
           type="button"
           @click="addItem"
           class="px-3 py-1 border rounded-md hover:bg-gray-100 text-sm font-medium transition-colors"
@@ -120,6 +125,7 @@
           required
           class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
           :min="new Date().toISOString().split('T')[0]"
+          :disabled="readOnly"
         />
       </div>
 
@@ -130,6 +136,7 @@
           v-model="form.delivery_street_address"
           type="text"
           class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
+          :disabled="readOnly"
         />
       </div>
 
@@ -140,6 +147,7 @@
           v-model="form.delivery_area"
           type="text"
           class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
+          :disabled="readOnly"
         />
       </div>
 
@@ -150,6 +158,7 @@
           v-model="form.delivery_town"
           type="text"
           class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
+          :disabled="readOnly"
         />
       </div>
 
@@ -160,6 +169,7 @@
           v-model="form.delivery_city"
           type="text"
           class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
+          :disabled="readOnly"
         />
       </div>
 
@@ -170,6 +180,7 @@
           v-model="form.delivery_pincode"
           type="text"
           class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
+          :disabled="readOnly"
         />
       </div>
     </div>
@@ -192,6 +203,7 @@
           v-model="form.status"
           required
           class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
+          :disabled="readOnly"
         >
           <option value="scheduled">Scheduled</option>
           <option value="pending">Pending</option>
@@ -208,6 +220,7 @@
         v-model="form.delivery_notes"
         rows="2"
         class="text-sm w-full border rounded-md px-3 py-2 focus:outline"
+        :disabled="readOnly"
       ></textarea>
     </div>
 
@@ -217,6 +230,15 @@
     <!-- Footer -->
     <div class="flex justify-end space-x-3 pt-4">
       <button
+        v-if="readOnly"
+        type="button"
+        @click="$emit('cancel')"
+        class="px-3 py-2 rounded-md font-semibold text-sm border hover:bg-gray-100 transition-colors"
+      >
+        Close
+      </button>
+      <button
+        v-else
         type="button"
         @click="$emit('cancel')"
         class="px-3 py-2 rounded-md font-semibold text-sm border hover:bg-gray-100 transition-colors"
@@ -224,6 +246,7 @@
         Cancel
       </button>
       <button
+        v-if="!readOnly"
         type="submit"
         class="px-3 py-2 rounded-md font-semibold text-sm text-white bg-gray-800 hover:bg-gray-950 transition-colors"
       >
@@ -239,7 +262,13 @@ import { getCustomers } from '@/api/customer'
 import { getProducts } from '@/api/product'
 
 export default {
-  props: { order: Object },
+  props: {
+    order: Object,
+    readOnly: {
+      type: Boolean,
+      default: false,
+    },
+  },
   data() {
     return {
       form: {

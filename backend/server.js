@@ -5,6 +5,7 @@ const express = require("express");
 const cors = require("cors");
 const pool = require("./config/db"); // import DB pool
 const initTables = require("./utils/initTables");
+const path = require('path');
 
 const app = express();
 
@@ -18,6 +19,10 @@ app.use("/api/products", require("./routes/productRoutes"));
 app.use("/api/orders", require("./routes/orderRoutes"));
 app.use("/api/payments", require("./routes/paymentRoutes"));
 app.use("/api/users", require("./routes/userRoutes"));
+app.use('/api/billing', require('./routes/billingRoutes'));
+
+// serve generated invoices (static)
+app.use('/invoices', express.static(path.join(__dirname, 'invoices')));
 
 
 // Health check

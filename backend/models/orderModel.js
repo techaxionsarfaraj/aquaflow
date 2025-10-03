@@ -62,6 +62,16 @@ async function getAllOrders() {
   `);
   return rows;
 }
+async function getAllDeliveredOrders() {
+  const [rows] = await pool.query(`
+    SELECT o.id, o.order_date, o.product_details, o.delivery_date, o.delivery_street_address,o.delivery_area, o.delivery_town,o.delivery_city,o.delivery_pincode,o.delivery_notes,o.status,o.delivery_pincode,  c.name AS customer_name, c.phone, c.email, o.total_amount 
+       FROM orders o 
+       JOIN customers c ON o.customer_id = c.id 
+       WHERE o.status = 'delivered'
+  `);
+  // console.log(rows);
+  return rows;
+}
 
 async function getOrderById(id) {
   const [rows] = await pool.query(
@@ -69,7 +79,8 @@ async function getOrderById(id) {
     SELECT 
       o.*,
       c.name AS customer_name,
-      c.phone AS customer_phone
+      c.phone AS customer_phone,
+      c.email AS customer_email
     FROM orders o
     LEFT JOIN customers c ON o.customer_id = c.id
     WHERE o.id = ?
@@ -203,6 +214,7 @@ async function deleteOrder(id) {
 module.exports = {
   createTable,
   getAllOrders,
+  getAllDeliveredOrders,
   getOrderById,
   createOrder,
   updateOrder,

@@ -73,12 +73,12 @@
           Orders
         </router-link>
         <router-link
-          to="/deliveries"
+          to="/billing"
           class="flex w-full overflow-hidden cursor-pointer text-left outline-none ring-sidebar-ring focus-visible:ring-2 font-semibold active:bg-sidebar-accent h-8 text-sm hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 rounded-md mb-1 items-center gap-3 px-3 py-5"
           active-class="border-blue-500 text-blue-700 border-r-2 bg-blue-50 "
         >
-        <i class="fa-regular fa-truck"></i>
-          Deliveries
+        <i class="fa-regular fa-receipt"></i>
+          Billing
         </router-link>
         <router-link
           to="/payments"
@@ -90,13 +90,14 @@
         </router-link>
       </nav>
       <!-- Footer / User -->
-      <div class="p-4 border-t border-gray-700 flex items-center gap-3">
-        <div class="w-10 h-10 flex items-center justify-center rounded-full bg-blue-500">
-          <span class="font-bold">A</span>
+      <div class="p-4 border-t border-gray-100 flex items-center gap-3">
+        <div class="w-10 h-10 flex items-center justify-center rounded-full bg-blue-600">
+          <span class="font-bold text-white">A</span>
         </div>
         <div>
           <p class="text-sm font-semibold">Admin User</p>
           <p class="text-xs text-gray-400">Business Owner</p>
+          <a href="http://" class="text-xs text-blue-600 font-semibold"> Logout</a>
         </div>
       </div>
     </aside>

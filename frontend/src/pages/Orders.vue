@@ -132,8 +132,9 @@
 
       <!--Delivery Address -->
       <div class="col-span-2 text-sm text-gray-700 capitalize">
-        {{ order.delivery_street_address }} <br /> <span class="font-semibold"> {{ order.delivery_area }}</span> <br />
-        {{ order.delivery_town }}
+        {{ order.delivery_street_address }} <br />
+        <span class="font-semibold">{{ order.delivery_area }}</span> <br />
+        {{ order.delivery_town }} <br /> {{ order.delivery_city }} {{ order.delivery_pincode }}
       </div>
 
       <!-- Total -->
@@ -163,7 +164,15 @@
 
       <!-- Actions -->
       <div class="col-span-1 flex justify-end space-x-3">
-        <button @click="editOrder(order)" class="text-gray-500 hover:text-blue-600">
+        <!-- If status is cancelled or delivered → View -->
+        <button
+          v-if="['cancelled', 'delivered'].includes(order.status?.toLowerCase())"
+          @click="viewOrder(order)"
+          class="text-gray-500 hover:text-blue-600"
+        >
+          <i class="fa-regular fa-eye"></i>
+        </button>
+        <button v-else @click="editOrder(order)" class="text-gray-500 hover:text-blue-600">
           <i class="fa-regular fa-pen-to-square"></i>
         </button>
         <button @click="removeOrder(order.id)" class="text-red-400 hover:text-red-500">
@@ -188,7 +197,12 @@
         <i class="fa-regular fa-box"></i>
         {{ editingOrder ? 'Edit Order' : 'Create New Order' }}
       </h2>
-      <OrderForm :order="editingOrder" @saved="handleSaved" @cancel="closeForm" />
+      <OrderForm
+        :read-only="editingOrder?.readOnly || false"
+        :order="editingOrder"
+        @saved="handleSaved"
+        @cancel="closeForm"
+      />
     </div>
   </div>
 </template>
@@ -337,6 +351,11 @@ function openAddOrder() {
 
 function editOrder(order) {
   editingOrder.value = order
+  showForm.value = true
+}
+
+function viewOrder(order) {
+  editingOrder.value = { ...order, readOnly: true }
   showForm.value = true
 }
 
