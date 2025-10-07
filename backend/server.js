@@ -3,9 +3,8 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const pool = require("./config/db"); // import DB pool
-const initTables = require("./utils/initTables");
-const path = require('path');
+const pool = require("./config/db");
+const path = require("path");
 
 const app = express();
 
@@ -19,11 +18,10 @@ app.use("/api/products", require("./routes/productRoutes"));
 app.use("/api/orders", require("./routes/orderRoutes"));
 app.use("/api/payments", require("./routes/paymentRoutes"));
 app.use("/api/users", require("./routes/userRoutes"));
-app.use('/api/billing', require('./routes/billingRoutes'));
+app.use("/api/billing", require("./routes/billingRoutes"));
 
-// serve generated invoices (static)
-app.use('/invoices', express.static(path.join(__dirname, 'invoices')));
-
+// ✅ Serve generated invoices (static)
+app.use("/invoices", express.static(path.join(__dirname, "invoices")));
 
 // Health check
 app.get("/", (req, res) => {
@@ -36,26 +34,22 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Internal Server Error" });
 });
 
-// Start server after DB connection and table initialization
+// Start server after DB connection
 const PORT = process.env.PORT || 5000;
 
 async function startServer() {
   try {
-    // 1️⃣ Check DB connection
     const connection = await pool.getConnection();
     console.log("✅ Database connected successfully");
     connection.release();
 
-    // 2️⃣ Initialize tables
-    // await initTables();
-
-    // 3️⃣ Start Express server
+    // Start Express server
     app.listen(PORT, () =>
       console.log(`🚀 Server running on http://localhost:${PORT}`)
     );
   } catch (err) {
     console.error("❌ Server startup failed:", err.message);
-    process.exit(1); // stop process if DB connection or table init fails
+    process.exit(1);
   }
 }
 

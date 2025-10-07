@@ -81,7 +81,7 @@
           Billing
         </router-link>
         <router-link
-          to="/payments"
+          to="/"
           class="flex w-full overflow-hidden cursor-pointer text-left outline-none ring-sidebar-ring focus-visible:ring-2 font-semibold active:bg-sidebar-accent h-8 text-sm hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 rounded-md mb-1 items-center gap-3 px-3 py-5"
           active-class="border-blue-500 text-blue-700 border-r-2 bg-blue-50 "
         >

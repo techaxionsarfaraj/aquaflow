@@ -101,13 +101,13 @@
         <button
           v-if="!order.bill_url"
           @click="generateBill(order)"
-          class="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+          class="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
         >
           Generate Bill
         </button>
 
         <!-- If bill exists -->
-        <template v-else>
+        <template v-else>          
           <button
             @click="viewBill(order.bill_url)"
             class="w-8 h-8 flex items-center justify-center rounded-full bg-blue-100 hover:bg-blue-700 text-blue-600 hover:text-white transition-colors"
@@ -141,13 +141,13 @@
           <button
             :disabled="!invoiceHtml"
             @click="printInvoice"
-            class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900 transition-colors"
+            class="w-8 h-8 flex items-center justify-center rounded-full bg-blue-100 hover:bg-blue-200 text-gray-700 hover:text-gray-900 transition-colors"
           >
-            <i class="fa-regular fa-print"></i>
+            <i class="fa-regular fa-print text-blue-800"></i>
           </button>
 
-          <button @click="showBillModal = false" class="text-gray-600 hover:text-gray-900">
-            ✖
+          <button @click="showBillModal = false" class="">
+            <i class="fa-solid fa-xmark text-red-600 hover:text-red-700"></i>
           </button>
         </div>
       </div>
@@ -175,6 +175,8 @@
 import { ref, onMounted } from 'vue'
 import { getDeliveredOrders } from '@/api/order'
 import axios from 'axios'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 
 const orders = ref([])
 const loading = ref(true)
@@ -189,7 +191,7 @@ const fetchOrders = async () => {
     const { data } = await getDeliveredOrders()
     orders.value = (Array.isArray(data) ? data : [data]).map((order) => {
       if (order.bill_file_name && !order.bill_url) {
-        order.bill_url = `http://localhost:5000/bills/${order.bill_file_name}`
+        order.bill_url = `${API_BASE_URL}/bills/${order.bill_file_name}`
       }
       return { ...order } // ensure reactivity
     })
@@ -221,17 +223,17 @@ const formatDate = (dateStr) => {
 // Generate bill
 const generateBill = async (order) => {
   try {
-    const res = await axios.post('http://localhost:5000/api/billing/generate-bill', {
+    const res = await axios.post(`${API_BASE_URL}/api/billing/generate-bill`, {
       order_id: order.id,
     })
 
     if (res.data && res.data.file_name) {
-      const billUrl = `http://localhost:5000/invoices/${res.data.file_name}`
+      const billUrl = `${res.data.file_name}`
 
       // Update order
       const index = orders.value.findIndex(o => o.id === order.id)
       if (index !== -1) {
-        orders.value[index] = { ...orders.value[index], bill_url: billUrl, bill_file_name: res.data.file_name }
+        orders.value[index] = { ...orders.value[index], bill_url: billUrl} //, bill_file_name: res.data.file_name 
       }
 
       // Show toast
@@ -292,21 +294,35 @@ const generateBill = async (order) => {
   }
 }
 
-// View bill in modal
-// const viewBill = (billUrl) => {
-//   iframeLoaded.value = false
-//   billUrlInModal.value = billUrl
-//   showBillModal.value = true
-// }
 // View bill (fetch HTML)
-const viewBill = async (billUrl) => {
+const viewBill = async (fileName) => {
   try {
-    const res = await axios.get(billUrl, { responseType: 'text' })
-    invoiceHtml.value = res.data
-    showBillModal.value = true
+    // Construct the URL from the file name
+    const billUrl = `${API_BASE_URL}/invoices/${fileName}`;
+    
+    // Fetch HTML content
+    const res = await axios.get(billUrl, { responseType: 'text' });
+    invoiceHtml.value = res.data;
+    
+    // Show modal
+    showBillModal.value = true;
   } catch (err) {
-    console.error('Error loading invoice HTML:', err)
-    alert('Failed to load invoice')
+    console.error('Error loading invoice HTML:', err);    
+    const toast = document.createElement('div')
+    toast.classList.add(
+      'fixed',
+      'top-0',
+      'right-0',
+      'm-2',
+      'bg-red-500',
+      'text-white',
+      'px-4',
+      'py-2',
+      'rounded'
+    )
+    toast.innerHTML = 'Failed to generate bill'
+    document.body.appendChild(toast)
+    setTimeout(() => toast.remove(), 3000)
   }
 }
 
