@@ -107,7 +107,7 @@
         </button>
 
         <!-- If bill exists -->
-        <template v-else>          
+        <template v-else>
           <button
             @click="viewBill(order.bill_url)"
             class="w-8 h-8 flex items-center justify-center rounded-full bg-blue-100 hover:bg-blue-700 text-blue-600 hover:text-white transition-colors"
@@ -175,8 +175,7 @@
 import { ref, onMounted } from 'vue'
 import { getDeliveredOrders } from '@/api/order'
 import axios from 'axios'
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 const orders = ref([])
 const loading = ref(true)
@@ -231,9 +230,9 @@ const generateBill = async (order) => {
       const billUrl = `${res.data.file_name}`
 
       // Update order
-      const index = orders.value.findIndex(o => o.id === order.id)
+      const index = orders.value.findIndex((o) => o.id === order.id)
       if (index !== -1) {
-        orders.value[index] = { ...orders.value[index], bill_url: billUrl} //, bill_file_name: res.data.file_name 
+        orders.value[index] = { ...orders.value[index], bill_url: billUrl } //, bill_file_name: res.data.file_name
       }
 
       // Show toast
@@ -247,7 +246,7 @@ const generateBill = async (order) => {
         'text-white',
         'px-4',
         'py-2',
-        'rounded'
+        'rounded',
       )
       toast.innerHTML = 'Bill generated successfully!'
       document.body.appendChild(toast)
@@ -268,7 +267,7 @@ const generateBill = async (order) => {
         'text-white',
         'px-4',
         'py-2',
-        'rounded'
+        'rounded',
       )
       toast.innerHTML = 'Invoice generated but no file returned'
       document.body.appendChild(toast)
@@ -286,7 +285,7 @@ const generateBill = async (order) => {
       'text-white',
       'px-4',
       'py-2',
-      'rounded'
+      'rounded',
     )
     toast.innerHTML = 'Failed to generate bill'
     document.body.appendChild(toast)
@@ -294,20 +293,41 @@ const generateBill = async (order) => {
   }
 }
 
+
+const checkFileExists = async (fileName) => {
+  try {
+    const billUrl = `${API_BASE_URL}/invoices/${fileName}`
+
+    // Use HEAD request to just check if file exists
+    await axios.head(billUrl)
+    return true
+  } catch (err) {
+    console.error('File does not exist:', err)
+    return false
+  }
+}
+
 // View bill (fetch HTML)
 const viewBill = async (fileName) => {
   try {
     // Construct the URL from the file name
-    const billUrl = `${API_BASE_URL}/invoices/${fileName}`;
-    
+    const billUrl = `${API_BASE_URL}/invoices/${fileName}`
+
+    const fileExists = await checkFileExists(fileName)    
+    if (!fileExists) {
+      const order = orders.value.find(order => order.bill_url === fileName)
+       await generateBill(order);
+       await viewBill(fileName);
+      return true;
+    }
     // Fetch HTML content
-    const res = await axios.get(billUrl, { responseType: 'text' });
-    invoiceHtml.value = res.data;
-    
+    const res = await axios.get(billUrl, { responseType: 'text' })
+    invoiceHtml.value = res.data
+
     // Show modal
-    showBillModal.value = true;
+    showBillModal.value = true
   } catch (err) {
-    console.error('Error loading invoice HTML:', err);    
+    console.error('Error loading invoice HTML:', err)
     const toast = document.createElement('div')
     toast.classList.add(
       'fixed',
@@ -318,13 +338,14 @@ const viewBill = async (fileName) => {
       'text-white',
       'px-4',
       'py-2',
-      'rounded'
+      'rounded',
     )
     toast.innerHTML = 'Failed to generate bill'
     document.body.appendChild(toast)
     setTimeout(() => toast.remove(), 3000)
   }
 }
+
 
 // Share bill
 const shareBill = async (order) => {
@@ -346,7 +367,7 @@ const shareBill = async (order) => {
 const printInvoice = () => {
   if (!invoiceHtml.value) return alert('Invoice not ready yet!')
 
-  const win = window.open('', '_blank')
+  const win = window.open('')
   win.document.writeln(`
     <html>
       <head>
